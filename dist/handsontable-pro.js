@@ -25,7 +25,7 @@
  * OF THE SOFTWARE WILL BE UNINTERRUPTED OR ERROR FREE.
  * 
  * Version: 6.2.1
- * Release date: 12/12/2018 (built at 14/01/2019 16:25:24)
+ * Release date: 12/12/2018 (built at 15/01/2019 17:56:06)
  */
 (function webpackUniversalModuleDefinition(root, factory) {
 	if(typeof exports === 'object' && typeof module === 'object')
@@ -1316,20 +1316,23 @@ function fastInnerHTML(element, content) {
     fastInnerText(element, content);
   }
 }
+
+var textContextSupport = function textContextSupport(rootDocument) {
+  return !!rootDocument.createTextNode('test').textContent;
+};
 /**
  * Insert text content into element
- * @return {void}
+ * @return {Boolean}
  */
 
 
-var textContextSupport = !!document.createTextNode('test').textContent;
-
 function fastInnerText(element, content) {
+  var rootDocument = element.ownerDocument;
   var child = element.firstChild;
 
   if (child && child.nodeType === 3 && child.nextSibling === null) {
     // fast lane - replace existing text node
-    if (textContextSupport) {
+    if (textContextSupport(rootDocument)) {
       // http://jsperf.com/replace-text-vs-reuse
       child.textContent = content;
     } else {
@@ -1339,7 +1342,7 @@ function fastInnerText(element, content) {
   } else {
     // slow lane - empty element and insert a text node
     empty(element);
-    element.appendChild(document.createTextNode(content));
+    element.appendChild(rootDocument.createTextNode(content));
   }
 }
 /**
@@ -1393,7 +1396,9 @@ function isVisible(elem) {
 
 
 function offset(elem) {
-  var docElem = elem.ownerDocument.documentElement;
+  var rootDocument = elem.ownerDocument;
+  var rootWindow = rootDocument.defaultView;
+  var docElem = rootDocument.documentElement;
   var elementToCheck = elem;
   var offsetLeft;
   var offsetTop;
@@ -1405,8 +1410,8 @@ function offset(elem) {
     // http://jsperf.com/offset-vs-getboundingclientrect/8
     box = elementToCheck.getBoundingClientRect();
     return {
-      top: box.top + (window.pageYOffset || docElem.scrollTop) - (docElem.clientTop || 0),
-      left: box.left + (window.pageXOffset || docElem.scrollLeft) - (docElem.clientLeft || 0)
+      top: box.top + (rootWindow.pageYOffset || docElem.scrollTop) - (docElem.clientTop || 0),
+      left: box.left + (rootWindow.pageXOffset || docElem.scrollLeft) - (docElem.clientLeft || 0)
     };
   }
 
@@ -1417,7 +1422,7 @@ function offset(elem) {
 
   while (elementToCheck = elementToCheck.offsetParent) {
     // from my observation, document.body always has scrollLeft/scrollTop == 0
-    if (elementToCheck === document.body) {
+    if (elementToCheck === rootDocument.body) {
       break;
     }
 
@@ -1429,8 +1434,8 @@ function offset(elem) {
 
   if (lastElem && lastElem.style.position === 'fixed') {
     // if(lastElem !== document.body) { //faster but does gives false positive in Firefox
-    offsetLeft += window.pageXOffset || docElem.scrollLeft;
-    offsetTop += window.pageYOffset || docElem.scrollTop;
+    offsetLeft += rootWindow.pageXOffset || docElem.scrollLeft;
+    offsetTop += rootWindow.pageYOffset || docElem.scrollTop;
   }
 
   return {
@@ -1445,12 +1450,12 @@ function offset(elem) {
  */
 
 
-function getWindowScrollTop() {
-  var res = window.scrollY;
+function getWindowScrollTop(rootWindow) {
+  var res = rootWindow.scrollY;
 
   if (res === void 0) {
     // IE8-11
-    res = document.documentElement.scrollTop;
+    res = rootWindow.document.documentElement.scrollTop;
   }
 
   return res;
@@ -1462,12 +1467,12 @@ function getWindowScrollTop() {
  */
 
 
-function getWindowScrollLeft() {
-  var res = window.scrollX;
+function getWindowScrollLeft(rootWindow) {
+  var res = rootWindow.scrollX;
 
   if (res === void 0) {
     // IE8-11
-    res = document.documentElement.scrollLeft;
+    res = rootWindow.document.documentElement.scrollLeft;
   }
 
   return res;
@@ -1480,9 +1485,9 @@ function getWindowScrollLeft() {
  */
 
 
-function getScrollTop(element) {
-  if (element === window) {
-    return getWindowScrollTop();
+function getScrollTop(element, rootWindow) {
+  if (element === rootWindow) {
+    return getWindowScrollTop(rootWindow);
   }
 
   return element.scrollTop;
@@ -1495,9 +1500,9 @@ function getScrollTop(element) {
  */
 
 
-function getScrollLeft(element) {
-  if (element === window) {
-    return getWindowScrollLeft();
+function getScrollLeft(element, rootWindow) {
+  if (element === rootWindow) {
+    return getWindowScrollLeft(rootWindow);
   }
 
   return element.scrollLeft;
@@ -1511,6 +1516,8 @@ function getScrollLeft(element) {
 
 
 function getScrollableElement(element) {
+  var rootDocument = element.ownerDocument;
+  var rootWindow = rootDocument.defaultView;
   var props = ['auto', 'scroll'];
   var el = element.parentNode;
   var overflow;
@@ -1521,15 +1528,15 @@ function getScrollableElement(element) {
   var computedOverflowY = '';
   var computedOverflowX = '';
 
-  while (el && el.style && document.body !== el) {
+  while (el && el.style && rootDocument.body !== el) {
     overflow = el.style.overflow;
     overflowX = el.style.overflowX;
     overflowY = el.style.overflowY;
 
     if (overflow === 'scroll' || overflowX === 'scroll' || overflowY === 'scroll') {
       return el;
-    } else if (window.getComputedStyle) {
-      computedStyle = window.getComputedStyle(el);
+    } else if (rootWindow.getComputedStyle) {
+      computedStyle = rootWindow.getComputedStyle(el);
       computedOverflow = computedStyle.getPropertyValue('overflow');
       computedOverflowY = computedStyle.getPropertyValue('overflow-y');
       computedOverflowX = computedStyle.getPropertyValue('overflow-x');
@@ -1551,7 +1558,7 @@ function getScrollableElement(element) {
     el = el.parentNode;
   }
 
-  return window;
+  return rootWindow;
 }
 /**
  * Returns a DOM element responsible for trimming the provided element.
@@ -1562,9 +1569,11 @@ function getScrollableElement(element) {
 
 
 function getTrimmingContainer(base) {
+  var rootDocument = base.ownerDocument;
+  var rootWindow = rootDocument.defaultView;
   var el = base.parentNode;
 
-  while (el && el.style && document.body !== el) {
+  while (el && el.style && rootDocument.body !== el) {
     if (el.style.overflow !== 'visible' && el.style.overflow !== '') {
       return el;
     }
@@ -1582,7 +1591,7 @@ function getTrimmingContainer(base) {
     el = el.parentNode;
   }
 
-  return window;
+  return rootWindow;
 }
 /**
  * Returns a style property for the provided element. (Be it an inline or external style).
@@ -1593,31 +1602,29 @@ function getTrimmingContainer(base) {
  */
 
 
-function getStyle(element, prop) {
-  /* eslint-disable */
+function getStyle(rootWindow, element, prop) {
   if (!element) {
     return;
-  } else if (element === window) {
+  } else if (element === rootWindow) {
     if (prop === 'width') {
-      return window.innerWidth + 'px';
+      return "".concat(rootWindow.innerWidth, "px");
     } else if (prop === 'height') {
-      return window.innerHeight + 'px';
+      return "".concat(rootWindow.innerHeight, "px");
     }
 
     return;
   }
 
-  var styleProp = element.style[prop],
-      computedStyle;
+  var styleProp = element.style[prop];
 
   if (styleProp !== '' && styleProp !== void 0) {
     return styleProp;
-  } else {
-    computedStyle = getComputedStyle(element);
+  }
 
-    if (computedStyle[prop] !== '' && computedStyle[prop] !== void 0) {
-      return computedStyle[prop];
-    }
+  var computedStyle = getComputedStyle(element);
+
+  if (computedStyle[prop] !== '' && computedStyle[prop] !== void 0) {
+    return computedStyle[prop];
   }
 }
 /**
@@ -1629,7 +1636,8 @@ function getStyle(element, prop) {
 
 
 function getComputedStyle(element) {
-  return element.currentStyle || document.defaultView.getComputedStyle(element);
+  var rootDocument = element.ownerDocument;
+  return element.currentStyle || rootDocument.defaultView.getComputedStyle(element);
 }
 /**
  * Returns the element's outer width.
@@ -1688,18 +1696,30 @@ function innerWidth(element) {
 }
 
 function addEvent(element, event, callback) {
-  if (window.addEventListener) {
+  var rootWindow = element.defaultView;
+
+  if (!rootWindow) {
+    rootWindow = element.document ? element : element.ownerDocument.defaultView;
+  }
+
+  if (rootWindow.addEventListener) {
     element.addEventListener(event, callback, false);
   } else {
-    element.attachEvent('on' + event, callback);
+    element.attachEvent("on".concat(event), callback);
   }
 }
 
 function removeEvent(element, event, callback) {
-  if (window.removeEventListener) {
+  var rootWindow = element.defaultView;
+
+  if (!rootWindow) {
+    rootWindow = element.document ? element : element.ownerDocument.defaultView;
+  }
+
+  if (rootWindow.removeEventListener) {
     element.removeEventListener(event, callback, false);
   } else {
-    element.detachEvent('on' + event, callback);
+    element.detachEvent("on".concat(event), callback);
   }
 }
 /**
@@ -1711,14 +1731,16 @@ function removeEvent(element, event, callback) {
 
 
 function getCaretPosition(el) {
+  var rootDocument = el.ownerDocument;
+
   if (el.selectionStart) {
     return el.selectionStart;
-  } else if (document.selection) {
+  } else if (rootDocument.selection) {
     // IE8
     el.focus();
-    var r = document.selection.createRange();
+    var r = rootDocument.selection.createRange();
 
-    if (r == null) {
+    if (r === null) {
       return 0;
     }
 
@@ -1739,13 +1761,15 @@ function getCaretPosition(el) {
 
 
 function getSelectionEndPosition(el) {
+  var rootDocument = el.ownerDocument;
+
   if (el.selectionEnd) {
     return el.selectionEnd;
-  } else if (document.selection) {
+  } else if (rootDocument.selection) {
     // IE8
-    var r = document.selection.createRange();
+    var r = rootDocument.selection.createRange();
 
-    if (r == null) {
+    if (r === null) {
       return 0;
     }
 
@@ -1762,13 +1786,14 @@ function getSelectionEndPosition(el) {
  */
 
 
-function getSelectionText() {
+function getSelectionText(rootWindow) {
+  var rootDocument = rootWindow.document;
   var text = '';
 
-  if (window.getSelection) {
-    text = window.getSelection().toString();
-  } else if (document.selection && document.selection.type !== 'Control') {
-    text = document.selection.createRange().text;
+  if (rootWindow.getSelection) {
+    text = rootWindow.getSelection().toString();
+  } else if (rootDocument.selection && rootDocument.selection.type !== 'Control') {
+    text = rootDocument.selection.createRange().text;
   }
 
   return text;
@@ -1778,19 +1803,20 @@ function getSelectionText() {
  */
 
 
-function clearTextSelection() {
-  // http://stackoverflow.com/questions/3169786/clear-text-selection-with-javascript
-  if (window.getSelection) {
-    if (window.getSelection().empty) {
+function clearTextSelection(rootWindow) {
+  var rootDocument = rootWindow.document; // http://stackoverflow.com/questions/3169786/clear-text-selection-with-javascript
+
+  if (rootWindow.getSelection) {
+    if (rootWindow.getSelection().empty) {
       // Chrome
-      window.getSelection().empty();
-    } else if (window.getSelection().removeAllRanges) {
+      rootWindow.getSelection().empty();
+    } else if (rootWindow.getSelection().removeAllRanges) {
       // Firefox
-      window.getSelection().removeAllRanges();
+      rootWindow.getSelection().removeAllRanges();
     }
-  } else if (document.selection) {
+  } else if (rootDocument.selection) {
     // IE?
-    document.selection.empty();
+    rootDocument.selection.empty();
   }
 }
 /**
@@ -1832,11 +1858,11 @@ function setCaretPosition(element, pos, endPos) {
 
 var cachedScrollbarWidth; // http://stackoverflow.com/questions/986937/how-can-i-get-the-browsers-scrollbar-sizes
 
-function walkontableCalculateScrollbarWidth() {
-  var inner = document.createElement('div');
+function walkontableCalculateScrollbarWidth(rootDocument) {
+  var inner = rootDocument.createElement('div');
   inner.style.height = '200px';
   inner.style.width = '100%';
-  var outer = document.createElement('div');
+  var outer = rootDocument.createElement('div');
   outer.style.boxSizing = 'content-box';
   outer.style.height = '150px';
   outer.style.left = '0px';
@@ -1846,16 +1872,16 @@ function walkontableCalculateScrollbarWidth() {
   outer.style.width = '200px';
   outer.style.visibility = 'hidden';
   outer.appendChild(inner);
-  (document.body || document.documentElement).appendChild(outer);
+  (rootDocument.body || rootDocument.documentElement).appendChild(outer);
   var w1 = inner.offsetWidth;
   outer.style.overflow = 'scroll';
   var w2 = inner.offsetWidth;
 
-  if (w1 == w2) {
+  if (w1 === w2) {
     w2 = outer.clientWidth;
   }
 
-  (document.body || document.documentElement).removeChild(outer);
+  (rootDocument.body || rootDocument.documentElement).removeChild(outer);
   return w1 - w2;
 }
 /**
@@ -1865,9 +1891,9 @@ function walkontableCalculateScrollbarWidth() {
  */
 
 
-function getScrollbarWidth() {
+function getScrollbarWidth(rootDocument) {
   if (cachedScrollbarWidth === void 0) {
-    cachedScrollbarWidth = walkontableCalculateScrollbarWidth();
+    cachedScrollbarWidth = walkontableCalculateScrollbarWidth(rootDocument);
   }
 
   return cachedScrollbarWidth;
@@ -1904,9 +1930,10 @@ function setOverlayPosition(overlayElem, left, top) {
     overlayElem.style.top = top;
     overlayElem.style.left = left;
   } else if ((0, _browser.isSafari)()) {
-    overlayElem.style['-webkit-transform'] = 'translate3d(' + left + ',' + top + ',0)';
+    overlayElem.style['-webkit-transform'] = "translate3d(".concat(left, ",").concat(top, ",0)");
+    overlayElem.style['-webkit-transform'] = "translate3d(".concat(left, ",").concat(top, ",0)");
   } else {
-    overlayElem.style.transform = 'translate3d(' + left + ',' + top + ',0)';
+    overlayElem.style.transform = "translate3d(".concat(left, ",").concat(top, ",0)");
   }
 }
 
@@ -1952,7 +1979,7 @@ function isInput(element) {
 
 
 function isOutsideInput(element) {
-  return isInput(element) && element.className.indexOf('handsontableInput') == -1 && element.className.indexOf('copyPaste') == -1;
+  return isInput(element) && element.className.indexOf('handsontableInput') === -1 && element.className.indexOf('copyPaste') === -1;
 }
 
 /***/ }),
@@ -2929,8 +2956,14 @@ function () {
   }, {
     key: "fireEvent",
     value: function fireEvent(element, eventName) {
-      var rootDocument = element.ownerDocument;
-      var rootWindow = rootDocument.defaultView;
+      var rootDocument = element.document;
+      var rootWindow = element;
+
+      if (!rootDocument) {
+        rootDocument = element.ownerDocument ? element.ownerDocument : element;
+        rootWindow = rootDocument.defaultView;
+      }
+
       var options = {
         bubbles: true,
         cancelable: eventName !== 'mousemove',
@@ -3636,7 +3669,8 @@ function pageX(event) {
     return event.pageX;
   }
 
-  return event.clientX + (0, _element.getWindowScrollLeft)();
+  var rootWindow = event.target.ownerDocument.defaultView;
+  return event.clientX + (0, _element.getWindowScrollLeft)(rootWindow);
 }
 /**
  * Get vertical coordinate of the event object relative to the whole document.
@@ -3651,7 +3685,8 @@ function pageY(event) {
     return event.pageY;
   }
 
-  return event.clientY + (0, _element.getWindowScrollTop)();
+  var rootWindow = event.target.ownerDocument.defaultView;
+  return event.clientY + (0, _element.getWindowScrollTop)(rootWindow);
 }
 /**
  * Check if provided event was triggered by clicking the right mouse button.
@@ -18100,7 +18135,7 @@ function () {
   }, {
     key: "setPositionOnLeftOfCursor",
     value: function setPositionOnLeftOfCursor(cursor) {
-      var left = this.offset.left + cursor.left - this.container.offsetWidth + (0, _element.getScrollbarWidth)() + 4;
+      var left = this.offset.left + cursor.left - this.container.offsetWidth + (0, _element.getScrollbarWidth)(this.hot.rootDocument) + 4;
       this.container.style.left = "".concat(left, "px");
     }
     /**
@@ -24759,8 +24794,8 @@ function () {
 
     this.instance = this.wot;
     this.eventManager = new _eventManager.default(this.wot);
-    this.wot.update('scrollbarWidth', (0, _element.getScrollbarWidth)());
-    this.wot.update('scrollbarHeight', (0, _element.getScrollbarWidth)());
+    this.wot.update('scrollbarWidth', (0, _element.getScrollbarWidth)(this.wot.rootDocument));
+    this.wot.update('scrollbarHeight', (0, _element.getScrollbarWidth)(this.wot.rootDocument));
     this.scrollableElement = (0, _element.getScrollableElement)(wtTable.TABLE);
     this.prepareOverlays();
     this.destroyed = false;
@@ -26097,8 +26132,8 @@ function () {
             this.wtRootElement.style.overflow = 'visible';
           }
         } else {
-          this.holder.style.width = (0, _element.getStyle)(trimmingElement, 'width');
-          this.holder.style.height = (0, _element.getStyle)(trimmingElement, 'height');
+          this.holder.style.width = (0, _element.getStyle)(this.wot.rootWindow, trimmingElement, 'width');
+          this.holder.style.height = (0, _element.getStyle)(this.wot.rootWindow, trimmingElement, 'height');
           this.holder.style.overflow = '';
         }
       }
@@ -27102,7 +27137,7 @@ function () {
 
 
         if (TD.nodeName === 'TH') {
-          TD = replaceThWithTd(TD, TR);
+          TD = replaceThWithTd(this.wot.rootDocument, TD, TR);
         }
 
         if (!(0, _element.hasClass)(TD, 'hide')) {
@@ -27229,7 +27264,7 @@ function () {
           TH = this.wot.rootDocument.createElement('TH');
           TR.appendChild(TH);
         } else if (TH.nodeName === 'TD') {
-          TH = replaceTdWithTh(TH, TR);
+          TH = replaceTdWithTh(this.wot.rootDocument, TH, TR);
         }
 
         this.renderRowHeader(row, visibleColIndex, TH); // http://jsperf.com/nextsibling-vs-indexed-childnodes
@@ -27401,15 +27436,15 @@ function () {
   return TableRenderer;
 }();
 
-function replaceTdWithTh(TD, TR) {
-  var TH = this.wot.rootDocument.createElement('TH');
+function replaceTdWithTh(rootDocument, TD, TR) {
+  var TH = rootDocument.createElement('TH');
   TR.insertBefore(TH, TD);
   TR.removeChild(TD);
   return TH;
 }
 
-function replaceThWithTd(TH, TR) {
-  var TD = this.wot.rootDocument.createElement('TD');
+function replaceThWithTd(rootDocument, TH, TR) {
+  var TD = rootDocument.createElement('TD');
   TR.insertBefore(TD, TH);
   TR.removeChild(TH);
   return TD;
@@ -27500,12 +27535,12 @@ function () {
     key: "getWorkspaceWidth",
     value: function getWorkspaceWidth() {
       var width;
-      var currentDocument = this.wot.wtTable.wtRootElement.ownerDocument;
+      var rootDocument = this.wot.rootDocument;
       var totalColumns = this.wot.getSetting('totalColumns');
       var trimmingContainer = this.instance.wtOverlays.leftOverlay.trimmingContainer;
       var overflow;
       var stretchSetting = this.wot.getSetting('stretchH');
-      var docOffsetWidth = currentDocument.documentElement.offsetWidth;
+      var docOffsetWidth = rootDocument.documentElement.offsetWidth;
       var preventOverflow = this.wot.getSetting('preventOverflow');
       var rootWindow = this.wot.rootWindow;
 
@@ -27524,11 +27559,11 @@ function () {
         // otherwise continue below, which will allow stretching
         // this is used in `scroll_window.html`
         // TODO test me
-        return currentDocument.documentElement.clientWidth;
+        return rootDocument.documentElement.clientWidth;
       }
 
       if (trimmingContainer !== rootWindow) {
-        overflow = (0, _element.getStyle)(this.instance.wtOverlays.leftOverlay.trimmingContainer, 'overflow');
+        overflow = (0, _element.getStyle)(rootWindow, this.instance.wtOverlays.leftOverlay.trimmingContainer, 'overflow');
 
         if (overflow === 'scroll' || overflow === 'hidden' || overflow === 'auto') {
           // this is used in `scroll.html`
@@ -27676,14 +27711,14 @@ function () {
   }, {
     key: "getRowHeaderWidth",
     value: function getRowHeaderWidth() {
-      var rowHeadersHeightSetting = this.instance.getSetting('rowHeaderWidth');
+      var rowHeadersWidthSetting = this.instance.getSetting('rowHeaderWidth');
       var rowHeaders = this.instance.getSetting('rowHeaders');
 
-      if (rowHeadersHeightSetting) {
+      if (rowHeadersWidthSetting) {
         this.rowHeaderWidth = 0;
 
         for (var i = 0, len = rowHeaders.length; i < len; i++) {
-          this.rowHeaderWidth += rowHeadersHeightSetting[i] || rowHeadersHeightSetting;
+          this.rowHeaderWidth += rowHeadersWidthSetting[i] || rowHeadersWidthSetting;
         }
       }
 
@@ -36825,7 +36860,7 @@ Handsontable._getListenersCounter = _eventManager.getListenersCounter; // For Me
 
 var hotPackageType = "pro";
 Handsontable.packageName = "handsontable-".concat(hotPackageType);
-Handsontable.buildDate = "14/01/2019 16:25:24";
+Handsontable.buildDate = "15/01/2019 17:56:06";
 Handsontable.version = "6.2.1"; // Export Hooks singleton
 
 Handsontable.hooks = _pluginHooks.default.getSingleton(); // TODO: Remove this exports after rewrite tests about this module
@@ -37541,7 +37576,7 @@ function (_Overlay) {
       var result = false;
 
       if (this.mainTableScrollableElement === rootWindow && rootWindow.scrollX !== pos) {
-        rootWindow.scrollTo(pos, (0, _element.getWindowScrollTop)());
+        rootWindow.scrollTo(pos, (0, _element.getWindowScrollTop)(rootWindow));
         result = true;
       } else if (this.mainTableScrollableElement.scrollLeft !== pos) {
         this.mainTableScrollableElement.scrollLeft = pos;
@@ -37744,7 +37779,7 @@ function (_Overlay) {
   }, {
     key: "getScrollPosition",
     value: function getScrollPosition() {
-      return (0, _element.getScrollLeft)(this.mainTableScrollableElement);
+      return (0, _element.getScrollLeft)(this.mainTableScrollableElement, this.wot.rootWindow);
     }
     /**
      * Adds css classes to hide the header border's header (cell-selection border hiding issue).
@@ -37906,7 +37941,7 @@ function (_Overlay) {
       var result = false;
 
       if (this.mainTableScrollableElement === rootWindow && rootWindow.scrollY !== pos) {
-        rootWindow.scrollTo((0, _element.getWindowScrollLeft)(), pos);
+        rootWindow.scrollTo((0, _element.getWindowScrollLeft)(rootWindow), pos);
         result = true;
       } else if (this.mainTableScrollableElement.scrollTop !== pos) {
         this.mainTableScrollableElement.scrollTop = pos;
@@ -38109,7 +38144,7 @@ function (_Overlay) {
   }, {
     key: "getScrollPosition",
     value: function getScrollPosition() {
-      return (0, _element.getScrollTop)(this.mainTableScrollableElement);
+      return (0, _element.getScrollTop)(this.mainTableScrollableElement, this.wot.rootWindow);
     }
     /**
      * Redraw borders of selection.
@@ -40012,7 +40047,7 @@ function (_TextEditor) {
     key: "createElements",
     value: function createElements() {
       (0, _get2.default)((0, _getPrototypeOf2.default)(PasswordEditor.prototype), "createElements", this).call(this);
-      this.TEXTAREA = this.wot.rootDocument.createElement('input');
+      this.TEXTAREA = this.hot.rootDocument.createElement('input');
       this.TEXTAREA.setAttribute('type', 'password');
       this.TEXTAREA.className = 'handsontableInput';
       this.textareaStyle = this.TEXTAREA.style;
@@ -40088,7 +40123,7 @@ function (_BaseEditor) {
      * Initializes editor instance, DOM Element and mount hooks.
      */
     value: function init() {
-      this.select = this.wot.rootDocument.createElement('SELECT');
+      this.select = this.hot.rootDocument.createElement('SELECT');
       (0, _element.addClass)(this.select, 'htSelectEditor');
       this.select.style.display = 'none';
       this.hot.rootElement.appendChild(this.select);
@@ -43765,7 +43800,7 @@ function () {
         priv.selectionMouseDown = true;
 
         if (!_this.isTextSelectionAllowed(event.target)) {
-          (0, _element.clearTextSelection)();
+          (0, _element.clearTextSelection)(_this.instance.rootWindow);
           event.preventDefault();
 
           _this.instance.rootWindow.focus(); // make sure that window that contains HOT is active. Important when HOT is in iframe.
@@ -43779,7 +43814,7 @@ function () {
         if (priv.selectionMouseDown && !_this.isTextSelectionAllowed(event.target)) {
           // Clear selection only when fragmentSelection is enabled, otherwise clearing selection breakes the IME editor.
           if (_this.settings.fragmentSelection) {
-            (0, _element.clearTextSelection)();
+            (0, _element.clearTextSelection)(_this.instance.rootWindow);
           }
 
           event.preventDefault();
@@ -51613,8 +51648,8 @@ function (_BasePlugin) {
 
       this.menu.open();
       this.menu.setPosition({
-        top: parseInt((0, _event.pageY)(event), 10) - (0, _element.getWindowScrollTop)(),
-        left: parseInt((0, _event.pageX)(event), 10) - (0, _element.getWindowScrollLeft)()
+        top: parseInt((0, _event.pageY)(event), 10) - (0, _element.getWindowScrollTop)(this.hot.rootWindow),
+        left: parseInt((0, _event.pageX)(event), 10) - (0, _element.getWindowScrollLeft)(this.hot.rootWindow)
       }); // ContextMenu is not detected HotTableEnv correctly because is injected outside hot-table
 
       this.menu.hotMenu.isHotTableEnv = this.hot.isHotTableEnv; // Handsontable.eventManager.isHotTableEnv = this.hot.isHotTableEnv;
@@ -52634,8 +52669,8 @@ var Cursor =
 function () {
   function Cursor(object, rootWindow) {
     (0, _classCallCheck2.default)(this, Cursor);
-    var windowScrollTop = (0, _element.getWindowScrollTop)();
-    var windowScrollLeft = (0, _element.getWindowScrollLeft)();
+    var windowScrollTop = (0, _element.getWindowScrollTop)(rootWindow);
+    var windowScrollLeft = (0, _element.getWindowScrollLeft)(rootWindow);
     var top;
     var topRelative;
     var left;
@@ -53662,7 +53697,7 @@ function () {
   (0, _createClass2.default)(FocusableWrapper, [{
     key: "useSecondaryElement",
     value: function useSecondaryElement() {
-      var el = createOrGetSecondaryElement();
+      var el = createOrGetSecondaryElement(this.rootDocument);
 
       if (!this.listenersCount.has(el)) {
         this.listenersCount.add(el);
@@ -53757,14 +53792,16 @@ function forwardEventsToLocalHooks(eventManager, element, subject) {
   eventManager.addEventListener(element, 'paste', runLocalHooks('paste', subject));
 }
 
-var secondaryElement;
+var secondaryElements = new Map();
 /**
  * Create and attach newly created focusable element to the DOM.
  *
  * @return {HTMLElement}
  */
 
-function createOrGetSecondaryElement() {
+function createOrGetSecondaryElement(rootDocument) {
+  var secondaryElement = secondaryElements.get(rootDocument);
+
   if (secondaryElement) {
     if (!secondaryElement.parentElement) {
       this.rootDocument.body.appendChild(secondaryElement);
@@ -53773,15 +53810,15 @@ function createOrGetSecondaryElement() {
     return secondaryElement;
   }
 
-  var element = this.rootDocument.createElement('textarea');
-  secondaryElement = element;
+  var element = rootDocument.createElement('textarea');
+  secondaryElements.set(rootDocument, element);
   element.id = 'HandsontableCopyPaste';
   element.className = 'copyPaste';
   element.tabIndex = -1;
   element.autocomplete = 'off';
   element.wrap = 'hard';
   element.value = ' ';
-  this.rootDocument.body.appendChild(element);
+  rootDocument.body.appendChild(element);
   return element;
 }
 /**
@@ -53805,9 +53842,11 @@ function destroyElement(wrapper) {
   if (refCounter <= 0) {
     refCounter = 0; // Detach secondary element from the DOM.
 
+    var secondaryElement = secondaryElements.get(wrapper.rootDocument);
+
     if (secondaryElement && secondaryElement.parentNode) {
       secondaryElement.parentNode.removeChild(secondaryElement);
-      secondaryElement = null;
+      secondaryElements.set(wrapper.rootDocument, null);
     }
 
     wrapper.mainElement = null;
@@ -78276,9 +78315,13 @@ function (_BasePlugin) {
         }
 
         (0, _element.empty)(TH);
-        var divEl = this.hot.rootDocument.createElement('DIV');
+
+        var divEl = _this.hot.rootDocument.createElement('DIV');
+
         (0, _element.addClass)(divEl, 'relative');
-        var spanEl = this.hot.rootDocument.createElement('SPAN');
+
+        var spanEl = _this.hot.rootDocument.createElement('SPAN');
+
         (0, _element.addClass)(spanEl, 'colHeader');
         (0, _element.fastInnerHTML)(spanEl, _this.colspanArray[headerRow][index] ? _this.colspanArray[headerRow][index].label || '' : '');
         divEl.appendChild(spanEl);
