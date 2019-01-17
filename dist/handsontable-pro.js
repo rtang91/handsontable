@@ -25,7 +25,7 @@
  * OF THE SOFTWARE WILL BE UNINTERRUPTED OR ERROR FREE.
  * 
  * Version: 6.2.1
- * Release date: 12/12/2018 (built at 15/01/2019 17:56:06)
+ * Release date: 12/12/2018 (built at 17/01/2019 17:30:26)
  */
 (function webpackUniversalModuleDefinition(root, factory) {
 	if(typeof exports === 'object' && typeof module === 'object')
@@ -971,12 +971,11 @@ function closestDown(element, nodes, until) {
 
 
 function isChildOf(child, parent) {
-  var rootDocument = child.ownerDocument;
   var node = child.parentNode;
   var queriedParents = [];
 
   if (typeof parent === 'string') {
-    queriedParents = Array.prototype.slice.call(rootDocument.querySelectorAll(parent), 0);
+    queriedParents = Array.prototype.slice.call(child.ownerDocument.querySelectorAll(parent), 0);
   } else {
     queriedParents.push(parent);
   }
@@ -1087,10 +1086,7 @@ function index(element) {
 function overlayContainsElement(overlayType, element) {
   var overlayElement = element.ownerDocument.querySelector(".ht_clone_".concat(overlayType));
   return overlayElement ? overlayElement.contains(element) : null;
-} // eslint-disable-next-line
-
-
-var classListSupport = !!document.documentElement.classList;
+}
 
 var _hasClass;
 
@@ -1115,7 +1111,7 @@ function filterEmptyClassNames(classNames) {
   return result;
 }
 
-if (classListSupport) {
+if ((0, _feature.isClassListSupported)()) {
   var isSupportMultipleClassesArg = function isSupportMultipleClassesArg(d) {
     var element = d.createElement('div');
     element.classList.add('test', 'test2');
@@ -1316,10 +1312,6 @@ function fastInnerHTML(element, content) {
     fastInnerText(element, content);
   }
 }
-
-var textContextSupport = function textContextSupport(rootDocument) {
-  return !!rootDocument.createTextNode('test').textContent;
-};
 /**
  * Insert text content into element
  * @return {Boolean}
@@ -1327,12 +1319,11 @@ var textContextSupport = function textContextSupport(rootDocument) {
 
 
 function fastInnerText(element, content) {
-  var rootDocument = element.ownerDocument;
   var child = element.firstChild;
 
   if (child && child.nodeType === 3 && child.nextSibling === null) {
     // fast lane - replace existing text node
-    if (textContextSupport(rootDocument)) {
+    if (_feature.isTextContentSupported) {
       // http://jsperf.com/replace-text-vs-reuse
       child.textContent = content;
     } else {
@@ -1342,7 +1333,7 @@ function fastInnerText(element, content) {
   } else {
     // slow lane - empty element and insert a text node
     empty(element);
-    element.appendChild(rootDocument.createTextNode(content));
+    element.appendChild(element.ownerDocument.createTextNode(content));
   }
 }
 /**
@@ -1398,7 +1389,7 @@ function isVisible(elem) {
 function offset(elem) {
   var rootDocument = elem.ownerDocument;
   var rootWindow = rootDocument.defaultView;
-  var docElem = rootDocument.documentElement;
+  var documentElement = rootDocument.documentElement;
   var elementToCheck = elem;
   var offsetLeft;
   var offsetTop;
@@ -1410,8 +1401,8 @@ function offset(elem) {
     // http://jsperf.com/offset-vs-getboundingclientrect/8
     box = elementToCheck.getBoundingClientRect();
     return {
-      top: box.top + (rootWindow.pageYOffset || docElem.scrollTop) - (docElem.clientTop || 0),
-      left: box.left + (rootWindow.pageXOffset || docElem.scrollLeft) - (docElem.clientLeft || 0)
+      top: box.top + (rootWindow.pageYOffset || documentElement.scrollTop) - (documentElement.clientTop || 0),
+      left: box.left + (rootWindow.pageXOffset || documentElement.scrollLeft) - (documentElement.clientLeft || 0)
     };
   }
 
@@ -1434,8 +1425,8 @@ function offset(elem) {
 
   if (lastElem && lastElem.style.position === 'fixed') {
     // if(lastElem !== document.body) { //faster but does gives false positive in Firefox
-    offsetLeft += rootWindow.pageXOffset || docElem.scrollLeft;
-    offsetTop += rootWindow.pageYOffset || docElem.scrollTop;
+    offsetLeft += rootWindow.pageXOffset || documentElement.scrollLeft;
+    offsetTop += rootWindow.pageYOffset || documentElement.scrollTop;
   }
 
   return {
@@ -1446,11 +1437,14 @@ function offset(elem) {
 /**
  * Returns the document's scrollTop property.
  *
+ * @param {Window} rootWindow
  * @returns {Number}
  */
+// eslint-disable-next-line
 
 
-function getWindowScrollTop(rootWindow) {
+function getWindowScrollTop() {
+  var rootWindow = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : window;
   var res = rootWindow.scrollY;
 
   if (res === void 0) {
@@ -1463,11 +1457,14 @@ function getWindowScrollTop(rootWindow) {
 /**
  * Returns the document's scrollLeft property.
  *
+ * @param {Window} rootWindow
  * @returns {Number}
  */
+// eslint-disable-next-line
 
 
-function getWindowScrollLeft(rootWindow) {
+function getWindowScrollLeft() {
+  var rootWindow = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : window;
   var res = rootWindow.scrollX;
 
   if (res === void 0) {
@@ -1481,11 +1478,15 @@ function getWindowScrollLeft(rootWindow) {
  * Returns the provided element's scrollTop property.
  *
  * @param element
+ * @param {Window} rootWindow
  * @returns {Number}
  */
+// eslint-disable-next-line
 
 
-function getScrollTop(element, rootWindow) {
+function getScrollTop(element) {
+  var rootWindow = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : window;
+
   if (element === rootWindow) {
     return getWindowScrollTop(rootWindow);
   }
@@ -1496,11 +1497,15 @@ function getScrollTop(element, rootWindow) {
  * Returns the provided element's scrollLeft property.
  *
  * @param element
+ * @param {Window} rootWindow
  * @returns {Number}
  */
+// eslint-disable-next-line
 
 
-function getScrollLeft(element, rootWindow) {
+function getScrollLeft(element) {
+  var rootWindow = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : window;
+
   if (element === rootWindow) {
     return getWindowScrollLeft(rootWindow);
   }
@@ -1519,6 +1524,7 @@ function getScrollableElement(element) {
   var rootDocument = element.ownerDocument;
   var rootWindow = rootDocument.defaultView;
   var props = ['auto', 'scroll'];
+  var supportedGetComputedStyle = (0, _feature.isGetComputedStyleSupported)();
   var el = element.parentNode;
   var overflow;
   var overflowX;
@@ -1535,7 +1541,7 @@ function getScrollableElement(element) {
 
     if (overflow === 'scroll' || overflowX === 'scroll' || overflowY === 'scroll') {
       return el;
-    } else if (rootWindow.getComputedStyle) {
+    } else if (supportedGetComputedStyle) {
       computedStyle = rootWindow.getComputedStyle(el);
       computedOverflow = computedStyle.getPropertyValue('overflow');
       computedOverflowY = computedStyle.getPropertyValue('overflow-y');
@@ -1578,7 +1584,7 @@ function getTrimmingContainer(base) {
       return el;
     }
 
-    var computedStyle = getComputedStyle(el);
+    var computedStyle = getComputedStyle(el, rootWindow);
     var allowedProperties = ['scroll', 'hidden', 'auto'];
     var property = computedStyle.getPropertyValue('overflow');
     var propertyY = computedStyle.getPropertyValue('overflow-y');
@@ -1598,11 +1604,15 @@ function getTrimmingContainer(base) {
  *
  * @param {HTMLElement} element
  * @param {String} prop Wanted property
+ * @param {Window} rootWindow
  * @returns {String|undefined} Element's style property
  */
+// eslint-disable-next-line
 
 
-function getStyle(rootWindow, element, prop) {
+function getStyle(element, prop) {
+  var rootWindow = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : window;
+
   if (!element) {
     return;
   } else if (element === rootWindow) {
@@ -1621,7 +1631,7 @@ function getStyle(rootWindow, element, prop) {
     return styleProp;
   }
 
-  var computedStyle = getComputedStyle(element);
+  var computedStyle = getComputedStyle(element, rootWindow);
 
   if (computedStyle[prop] !== '' && computedStyle[prop] !== void 0) {
     return computedStyle[prop];
@@ -1631,13 +1641,15 @@ function getStyle(rootWindow, element, prop) {
  * Returns a computed style object for the provided element. (Needed if style is declared in external stylesheet).
  *
  * @param element
+ * @param {Window} rootWindow
  * @returns {IEElementStyle|CssStyle} Elements computed style object
  */
+// eslint-disable-next-line
 
 
 function getComputedStyle(element) {
-  var rootDocument = element.ownerDocument;
-  return element.currentStyle || rootDocument.defaultView.getComputedStyle(element);
+  var rootWindow = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : window;
+  return element.currentStyle || rootWindow.getComputedStyle(element);
 }
 /**
  * Returns the element's outer width.
@@ -1725,7 +1737,7 @@ function removeEvent(element, event, callback) {
 /**
  * Returns caret position in text input
  *
- * @author http://stackoverflow.com/questions/263743/how-to-get-caret-position-in-textarea
+ * @author https://stackoverflow.com/questions/263743/how-to-get-caret-position-in-textarea
  * @return {Number}
  */
 
@@ -1856,7 +1868,7 @@ function setCaretPosition(element, pos, endPos) {
   }
 }
 
-var cachedScrollbarWidth; // http://stackoverflow.com/questions/986937/how-can-i-get-the-browsers-scrollbar-sizes
+var cachedScrollbarWidth; // https://stackoverflow.com/questions/986937/how-can-i-get-the-browsers-scrollbar-sizes
 
 function walkontableCalculateScrollbarWidth(rootDocument) {
   var inner = rootDocument.createElement('div');
@@ -7011,6 +7023,9 @@ var _interopRequireDefault = __webpack_require__(0);
 
 exports.__esModule = true;
 exports.requestAnimationFrame = requestAnimationFrame;
+exports.isClassListSupported = isClassListSupported;
+exports.isTextContentSupported = isTextContentSupported;
+exports.isGetComputedStyleSupported = isGetComputedStyleSupported;
 exports.cancelAnimationFrame = cancelAnimationFrame;
 exports.isTouchSupported = isTouchSupported;
 exports.isWebComponentSupportedNatively = isWebComponentSupportedNatively;
@@ -7019,8 +7034,9 @@ exports.getComparisonFunction = getComparisonFunction;
 
 var _typeof2 = _interopRequireDefault(__webpack_require__(29));
 
-/* eslint-disable */
 // https://gist.github.com/paulirish/1579671
+
+/* eslint-disable no-restricted-globals */
 var lastTime = 0;
 var vendors = ['ms', 'moz', 'webkit', 'o'];
 var _requestAnimationFrame = window.requestAnimationFrame;
@@ -7058,6 +7074,18 @@ if (!_cancelAnimationFrame) {
 
 function requestAnimationFrame(callback) {
   return _requestAnimationFrame.call(window, callback);
+}
+
+function isClassListSupported() {
+  return !!document.documentElement.classList;
+}
+
+function isTextContentSupported() {
+  return document.createTextNode('test').textContent;
+}
+
+function isGetComputedStyleSupported() {
+  return !!window.getComputedStyle;
 }
 /**
  * Polyfill for cancelAnimationFrame
@@ -7320,16 +7348,22 @@ function () {
     (0, _classCallCheck2.default)(this, Overlay);
     (0, _object.defineGetter)(this, 'wot', wotInstance, {
       writable: false
-    }); // legacy support, deprecated in the future
+    });
+    var _this$wot$wtTable = this.wot.wtTable,
+        TABLE = _this$wot$wtTable.TABLE,
+        hider = _this$wot$wtTable.hider,
+        spreader = _this$wot$wtTable.spreader,
+        holder = _this$wot$wtTable.holder,
+        wtRootElement = _this$wot$wtTable.wtRootElement; // legacy support, deprecated in the future
 
     this.instance = this.wot;
     this.type = '';
     this.mainTableScrollableElement = null;
-    this.TABLE = this.wot.wtTable.TABLE;
-    this.hider = this.wot.wtTable.hider;
-    this.spreader = this.wot.wtTable.spreader;
-    this.holder = this.wot.wtTable.holder;
-    this.wtRootElement = this.wot.wtTable.wtRootElement;
+    this.TABLE = TABLE;
+    this.hider = hider;
+    this.spreader = spreader;
+    this.holder = holder;
+    this.wtRootElement = wtRootElement;
     this.trimmingContainer = (0, _element.getTrimmingContainer)(this.hider.parentNode.parentNode);
     this.areElementSizesAdjusted = false;
     this.updateStateOfRendering();
@@ -7398,8 +7432,10 @@ function () {
         throw new Error("Clone type \"".concat(direction, "\" is not supported."));
       }
 
-      var wtTable = this.wot.wtTable;
-      var rootDocument = this.wot.rootDocument;
+      var _this$wot = this.wot,
+          wtTable = _this$wot.wtTable,
+          rootDocument = _this$wot.rootDocument,
+          rootWindow = _this$wot.rootWindow;
       var clone = rootDocument.createElement('DIV');
       var clonedTable = rootDocument.createElement('TABLE');
       clone.className = "ht_clone_".concat(direction, " handsontable");
@@ -7414,7 +7450,7 @@ function () {
       var preventOverflow = this.wot.getSetting('preventOverflow');
 
       if (preventOverflow === true || preventOverflow === 'horizontal' && this.type === Overlay.CLONE_TOP || preventOverflow === 'vertical' && this.type === Overlay.CLONE_LEFT) {
-        this.mainTableScrollableElement = this.wot.rootWindow;
+        this.mainTableScrollableElement = rootWindow;
       } else {
         this.mainTableScrollableElement = (0, _element.getScrollableElement)(wtTable.TABLE);
       }
@@ -13187,7 +13223,6 @@ function Core(rootElement, userSettings) {
     (0, _rootInstance.registerAsRootInstance)(this);
   }
 
-  this.isDestroyed = false;
   this.rootElement = rootElement;
   /**
    * The nearest document over container.
@@ -13206,6 +13241,7 @@ function Core(rootElement, userSettings) {
 
   this.rootWindow = this.rootDocument.defaultView;
   (0, _keyStateObserver.startObserving)(this.rootDocument);
+  this.isDestroyed = false;
   this.isHotTableEnv = (0, _element.isChildOfWebComponentTable)(this.rootElement);
   _eventManager.default.isHotTableEnv = this.isHotTableEnv;
   this.container = this.rootDocument.createElement('div');
@@ -14369,16 +14405,17 @@ function Core(rootElement, userSettings) {
 
   this.listen = function () {
     var modifyDocumentFocus = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : true;
-    var d = instance.rootDocument;
+    var _instance5 = instance,
+        rootDocument = _instance5.rootDocument;
 
     if (modifyDocumentFocus) {
-      var invalidActiveElement = !d.activeElement || d.activeElement && d.activeElement.nodeName === void 0;
+      var invalidActiveElement = !rootDocument.activeElement || rootDocument.activeElement && rootDocument.activeElement.nodeName === void 0;
 
-      if (d.activeElement && d.activeElement !== d.body && !invalidActiveElement) {
-        d.activeElement.blur();
+      if (rootDocument.activeElement && rootDocument.activeElement !== rootDocument.body && !invalidActiveElement) {
+        rootDocument.activeElement.blur();
       } else if (invalidActiveElement) {
         // IE
-        d.body.focus();
+        rootDocument.body.focus();
       }
     }
 
@@ -16648,7 +16685,7 @@ function Core(rootElement, userSettings) {
     (0, _keyStateObserver.stopObserving)();
 
     if ("pro" !== '\x63\x65' && (0, _rootInstance.isRootInstance)(instance)) {
-      var licenseInfo = instance.rootElement.ownerDocument.querySelector('#hot-display-license-info');
+      var licenseInfo = instance.rootDocument.querySelector('#hot-display-license-info');
 
       if (licenseInfo) {
         licenseInfo.parentNode.removeChild(licenseInfo);
@@ -17241,8 +17278,7 @@ function () {
     value: function createColGroupsCol() {
       var _this = this;
 
-      var d = this.hot.rootElement.ownerDocument;
-      var fragment = d.createDocumentFragment();
+      var fragment = this.hot.rootDocument.createDocumentFragment();
 
       if (this.hot.hasRowHeaders()) {
         fragment.appendChild(this.createColElement(-1));
@@ -17267,9 +17303,9 @@ function () {
     value: function createRow(row) {
       var _this2 = this;
 
-      var d = this.hot.rootElement.ownerDocument;
-      var fragment = d.createDocumentFragment();
-      var th = d.createElement('th');
+      var rootDocument = this.hot.rootDocument;
+      var fragment = rootDocument.createDocumentFragment();
+      var th = rootDocument.createElement('th');
 
       if (this.hot.hasRowHeaders()) {
         this.hot.view.appendRowHeader(row, th);
@@ -17287,7 +17323,7 @@ function () {
 
           var renderer = _this2.hot.getCellRenderer(cellProperties);
 
-          var td = d.createElement('td');
+          var td = rootDocument.createElement('td');
           renderer(_this2.hot, td, row, column, _this2.hot.colToProp(column), string.value, cellProperties);
           fragment.appendChild(td);
         });
@@ -17299,11 +17335,11 @@ function () {
     value: function createColumnHeadersRow() {
       var _this3 = this;
 
-      var d = this.hot.rootElement.ownerDocument;
-      var fragment = d.createDocumentFragment();
+      var rootDocument = this.hot.rootDocument;
+      var fragment = rootDocument.createDocumentFragment();
 
       if (this.hot.hasRowHeaders()) {
-        var th = d.createElement('th');
+        var th = rootDocument.createElement('th');
         this.hot.view.appendColHeader(-1, th);
         fragment.appendChild(th);
       }
@@ -17311,7 +17347,7 @@ function () {
       this.samples.forEach(function (sample) {
         (0, _array.arrayEach)(sample.strings, function (string) {
           var column = string.col;
-          var th = d.createElement('th');
+          var th = rootDocument.createElement('th');
 
           _this3.hot.view.appendColHeader(column, th);
 
@@ -17332,8 +17368,8 @@ function () {
     value: function createCol(column) {
       var _this4 = this;
 
-      var d = this.hot.rootElement.ownerDocument;
-      var fragment = d.createDocumentFragment();
+      var rootDocument = this.hot.rootDocument;
+      var fragment = rootDocument.createDocumentFragment();
       this.samples.forEach(function (sample) {
         (0, _array.arrayEach)(sample.strings, function (string) {
           var row = string.row;
@@ -17345,8 +17381,8 @@ function () {
 
           var renderer = _this4.hot.getCellRenderer(cellProperties);
 
-          var td = d.createElement('td');
-          var tr = d.createElement('tr'); // Indicate that this element is created and supported by GhostTable. It can be useful to
+          var td = rootDocument.createElement('td');
+          var tr = rootDocument.createElement('tr'); // Indicate that this element is created and supported by GhostTable. It can be useful to
           // exclude rendering performance costly logic or exclude logic which doesn't work within a hidden table.
 
           td.setAttribute('ghost-table', 1);
@@ -17414,8 +17450,7 @@ function () {
   }, {
     key: "createColElement",
     value: function createColElement(column) {
-      var d = this.hot.rootElement.ownerDocument;
-      var col = d.createElement('col');
+      var col = this.hot.rootDocument.createElement('col');
       col.style.width = "".concat(this.hot.view.wt.wtTable.getStretchedColumnWidth(column), "px");
       return col;
     }
@@ -17430,14 +17465,14 @@ function () {
     key: "createTable",
     value: function createTable() {
       var className = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : '';
-      var d = this.hot.rootElement.ownerDocument;
-      var fragment = d.createDocumentFragment();
-      var table = d.createElement('table');
-      var tHead = d.createElement('thead');
-      var tBody = d.createElement('tbody');
-      var colGroup = d.createElement('colgroup');
-      var tr = d.createElement('tr');
-      var th = d.createElement('th');
+      var rootDocument = this.hot.rootDocument;
+      var fragment = rootDocument.createDocumentFragment();
+      var table = rootDocument.createElement('table');
+      var tHead = rootDocument.createElement('thead');
+      var tBody = rootDocument.createElement('tbody');
+      var colGroup = rootDocument.createElement('colgroup');
+      var tr = rootDocument.createElement('tr');
+      var th = rootDocument.createElement('th');
 
       if (this.isVertical()) {
         table.appendChild(colGroup);
@@ -17480,9 +17515,9 @@ function () {
     key: "createContainer",
     value: function createContainer() {
       var className = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : '';
-      var d = this.hot.rootElement.ownerDocument;
-      var fragment = d.createDocumentFragment();
-      var container = d.createElement('div');
+      var rootDocument = this.hot.rootDocument;
+      var fragment = rootDocument.createDocumentFragment();
+      var container = rootDocument.createElement('div');
       var containerClassName = "htGhostTable htAutoSize ".concat(className.trim());
       (0, _element.addClass)(container, containerClassName);
       fragment.appendChild(container);
@@ -18313,6 +18348,7 @@ function () {
     key: "createContainer",
     value: function createContainer() {
       var name = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : null;
+      var rootDocument = this.hot.rootDocument;
       var className = name;
       var container;
 
@@ -18329,20 +18365,20 @@ function () {
 
         className = className.replace(/[^A-z0-9]/g, '_');
         className = "".concat(this.options.className, "Sub_").concat(className);
-        container = this.hot.rootDocument.querySelector(".".concat(this.options.className, ".").concat(className));
+        container = rootDocument.querySelector(".".concat(this.options.className, ".").concat(className));
       } else {
-        container = this.hot.rootDocument.querySelector(".".concat(this.options.className));
+        container = rootDocument.querySelector(".".concat(this.options.className));
       }
 
       if (!container) {
-        container = this.hot.rootDocument.createElement('div');
+        container = rootDocument.createElement('div');
         (0, _element.addClass)(container, "htMenu ".concat(this.options.className));
 
         if (className) {
           (0, _element.addClass)(container, className);
         }
 
-        this.hot.rootDocument.getElementsByTagName('body')[0].appendChild(container);
+        rootDocument.getElementsByTagName('body')[0].appendChild(container);
       }
 
       return container;
@@ -18469,9 +18505,10 @@ function () {
   }, {
     key: "onAfterInit",
     value: function onAfterInit() {
+      var wtTable = this.hotMenu.view.wt.wtTable;
       var data = this.hotMenu.getSettings().data;
-      var hiderStyle = this.hotMenu.view.wt.wtTable.hider.style;
-      var holderStyle = this.hotMenu.view.wt.wtTable.holder.style;
+      var hiderStyle = wtTable.hider.style;
+      var holderStyle = wtTable.holder.style;
       var currentHiderWidth = parseInt(hiderStyle.width, 10);
       var realHeight = (0, _array.arrayReduce)(data, function (accumulator, value) {
         return accumulator + (value.name === _predefinedItems.SEPARATOR ? 1 : 26);
@@ -24794,8 +24831,8 @@ function () {
 
     this.instance = this.wot;
     this.eventManager = new _eventManager.default(this.wot);
-    this.wot.update('scrollbarWidth', (0, _element.getScrollbarWidth)(this.wot.rootDocument));
-    this.wot.update('scrollbarHeight', (0, _element.getScrollbarWidth)(this.wot.rootDocument));
+    this.wot.update('scrollbarWidth', (0, _element.getScrollbarWidth)(rootDocument));
+    this.wot.update('scrollbarHeight', (0, _element.getScrollbarWidth)(rootDocument));
     this.scrollableElement = (0, _element.getScrollableElement)(wtTable.TABLE);
     this.prepareOverlays();
     this.destroyed = false;
@@ -25337,11 +25374,12 @@ function () {
     key: "adjustElementsSize",
     value: function adjustElementsSize() {
       var force = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : false;
-      var totalColumns = this.wot.getSetting('totalColumns');
-      var totalRows = this.wot.getSetting('totalRows');
-      var headerRowSize = this.wot.wtViewport.getRowHeaderWidth();
-      var headerColumnSize = this.wot.wtViewport.getColumnHeaderHeight();
-      var hiderStyle = this.wot.wtTable.hider.style;
+      var wot = this.wot;
+      var totalColumns = wot.getSetting('totalColumns');
+      var totalRows = wot.getSetting('totalRows');
+      var headerRowSize = wot.wtViewport.getRowHeaderWidth();
+      var headerColumnSize = wot.wtViewport.getColumnHeaderHeight();
+      var hiderStyle = wot.wtTable.hider.style;
       hiderStyle.width = "".concat(headerRowSize + this.leftOverlay.sumCellSizes(0, totalColumns), "px");
       hiderStyle.height = "".concat(headerColumnSize + this.topOverlay.sumCellSizes(0, totalRows) + 1, "px");
       this.topOverlay.adjustElementsSize(force);
@@ -25628,7 +25666,7 @@ function () {
         var rootElementOffset = (0, _element.offset)(wtTable.wtRootElement);
         var totalTableWidth = (0, _element.innerWidth)(wtTable.hider);
         var windowWidth = (0, _element.innerWidth)(rootWindow);
-        var windowScrollLeft = (0, _element.getScrollLeft)(rootWindow); // Only calculate firstVisibleColumn when table didn't filled (from left) whole viewport space
+        var windowScrollLeft = (0, _element.getScrollLeft)(rootWindow, rootWindow); // Only calculate firstVisibleColumn when table didn't filled (from left) whole viewport space
 
         if (rootElementOffset.left + totalTableWidth - windowWidth <= windowScrollLeft) {
           var columnsWidth = wtViewport.getRowHeaderWidth();
@@ -25667,7 +25705,7 @@ function () {
       if (leftOverlay.mainTableScrollableElement === rootWindow) {
         var rootElementOffset = (0, _element.offset)(wtTable.wtRootElement);
         var windowWidth = (0, _element.innerWidth)(rootWindow);
-        var windowScrollLeft = (0, _element.getScrollLeft)(rootWindow); // Only calculate lastVisibleColumn when table didn't filled (from right) whole viewport space
+        var windowScrollLeft = (0, _element.getScrollLeft)(rootWindow, rootWindow); // Only calculate lastVisibleColumn when table didn't filled (from right) whole viewport space
 
         if (rootElementOffset.left > windowScrollLeft) {
           var columnsWidth = wtViewport.getRowHeaderWidth();
@@ -26122,9 +26160,10 @@ function () {
       var trimmingElement = (0, _element.getTrimmingContainer)(this.wtRootElement);
 
       if (!this.isWorkingOnClone()) {
+        var rootWindow = this.wot.rootWindow;
         this.holder.parentNode.style.position = 'relative';
 
-        if (trimmingElement === this.wot.rootWindow) {
+        if (trimmingElement === rootWindow) {
           var preventOverflow = this.wot.getSetting('preventOverflow');
 
           if (!preventOverflow) {
@@ -26132,8 +26171,8 @@ function () {
             this.wtRootElement.style.overflow = 'visible';
           }
         } else {
-          this.holder.style.width = (0, _element.getStyle)(this.wot.rootWindow, trimmingElement, 'width');
-          this.holder.style.height = (0, _element.getStyle)(this.wot.rootWindow, trimmingElement, 'height');
+          this.holder.style.width = (0, _element.getStyle)(trimmingElement, 'width', rootWindow);
+          this.holder.style.height = (0, _element.getStyle)(trimmingElement, 'height', rootWindow);
           this.holder.style.overflow = '';
         }
       }
@@ -26153,12 +26192,13 @@ function () {
   }, {
     key: "draw",
     value: function draw(fastDraw) {
+      var wot = this.wot;
       var _this$wot = this.wot,
           wtOverlays = _this$wot.wtOverlays,
           wtViewport = _this$wot.wtViewport;
       var totalRows = this.instance.getSetting('totalRows');
-      var rowHeaders = this.wot.getSetting('rowHeaders').length;
-      var columnHeaders = this.wot.getSetting('columnHeaders').length;
+      var rowHeaders = wot.getSetting('rowHeaders').length;
+      var columnHeaders = wot.getSetting('columnHeaders').length;
       var syncScroll = false;
       var runFastDraw = fastDraw;
 
@@ -26166,7 +26206,7 @@ function () {
         this.holderOffset = (0, _element.offset)(this.holder);
         runFastDraw = wtViewport.createRenderCalculators(runFastDraw);
 
-        if (rowHeaders && !this.wot.getSetting('fixedColumnsLeft')) {
+        if (rowHeaders && !wot.getSetting('fixedColumnsLeft')) {
           var leftScrollPos = wtOverlays.leftOverlay.getScrollPosition();
           var previousState = this.correctHeaderWidth;
           this.correctHeaderWidth = leftScrollPos > 0;
@@ -26191,32 +26231,34 @@ function () {
           wtOverlays.refresh(true);
         }
       } else {
+        var cloneOverlay = wot.cloneOverlay;
+
         if (this.isWorkingOnClone()) {
-          this.tableOffset = this.wot.cloneSource.wtTable.tableOffset;
+          this.tableOffset = wot.cloneSource.wtTable.tableOffset;
         } else {
           this.tableOffset = (0, _element.offset)(this.TABLE);
         }
 
         var startRow;
 
-        if (_base.default.isOverlayTypeOf(this.wot.cloneOverlay, _base.default.CLONE_DEBUG) || _base.default.isOverlayTypeOf(this.wot.cloneOverlay, _base.default.CLONE_TOP) || _base.default.isOverlayTypeOf(this.wot.cloneOverlay, _base.default.CLONE_TOP_LEFT_CORNER)) {
+        if (_base.default.isOverlayTypeOf(cloneOverlay, _base.default.CLONE_DEBUG) || _base.default.isOverlayTypeOf(cloneOverlay, _base.default.CLONE_TOP) || _base.default.isOverlayTypeOf(cloneOverlay, _base.default.CLONE_TOP_LEFT_CORNER)) {
           startRow = 0;
         } else if (_base.default.isOverlayTypeOf(this.instance.cloneOverlay, _base.default.CLONE_BOTTOM) || _base.default.isOverlayTypeOf(this.instance.cloneOverlay, _base.default.CLONE_BOTTOM_LEFT_CORNER)) {
-          startRow = Math.max(totalRows - this.wot.getSetting('fixedRowsBottom'), 0);
+          startRow = Math.max(totalRows - wot.getSetting('fixedRowsBottom'), 0);
         } else {
           startRow = wtViewport.rowsRenderCalculator.startRow;
         }
 
         var startColumn;
 
-        if (_base.default.isOverlayTypeOf(this.wot.cloneOverlay, _base.default.CLONE_DEBUG) || _base.default.isOverlayTypeOf(this.wot.cloneOverlay, _base.default.CLONE_LEFT) || _base.default.isOverlayTypeOf(this.wot.cloneOverlay, _base.default.CLONE_TOP_LEFT_CORNER) || _base.default.isOverlayTypeOf(this.wot.cloneOverlay, _base.default.CLONE_BOTTOM_LEFT_CORNER)) {
+        if (_base.default.isOverlayTypeOf(cloneOverlay, _base.default.CLONE_DEBUG) || _base.default.isOverlayTypeOf(cloneOverlay, _base.default.CLONE_LEFT) || _base.default.isOverlayTypeOf(cloneOverlay, _base.default.CLONE_TOP_LEFT_CORNER) || _base.default.isOverlayTypeOf(cloneOverlay, _base.default.CLONE_BOTTOM_LEFT_CORNER)) {
           startColumn = 0;
         } else {
           startColumn = wtViewport.columnsRenderCalculator.startColumn;
         }
 
         this.rowFilter = new _row.default(startRow, totalRows, columnHeaders);
-        this.columnFilter = new _column.default(startColumn, this.wot.getSetting('totalColumns'), rowHeaders);
+        this.columnFilter = new _column.default(startColumn, wot.getSetting('totalColumns'), rowHeaders);
         this.alignOverlaysWithTrimmingContainer();
 
         this._doDraw(); // creates calculator after draw
@@ -26247,7 +26289,7 @@ function () {
         wtOverlays.syncScrollWithMaster();
       }
 
-      this.wot.drawn = true;
+      wot.drawn = true;
       return this;
     }
   }, {
@@ -26274,11 +26316,13 @@ function () {
   }, {
     key: "refreshSelections",
     value: function refreshSelections(fastDraw) {
-      if (!this.wot.selections) {
+      var wot = this.wot;
+
+      if (!wot.selections) {
         return;
       }
 
-      var highlights = Array.from(this.wot.selections);
+      var highlights = Array.from(wot.selections);
       var len = highlights.length;
 
       if (fastDraw) {
@@ -26311,7 +26355,7 @@ function () {
           }
         }
 
-        var additionalClassesToRemove = this.wot.getSetting('onBeforeRemoveCellClassNames');
+        var additionalClassesToRemove = wot.getSetting('onBeforeRemoveCellClassNames');
 
         if (Array.isArray(additionalClassesToRemove)) {
           for (var _i = 0; _i < additionalClassesToRemove.length; _i++) {
@@ -26328,7 +26372,7 @@ function () {
       }
 
       for (var _i3 = 0; _i3 < len; _i3++) {
-        highlights[_i3].draw(this.wot, fastDraw);
+        highlights[_i3].draw(wot, fastDraw);
       }
     }
     /**
@@ -26544,13 +26588,14 @@ function () {
   }, {
     key: "getRenderedColumnsCount",
     value: function getRenderedColumnsCount() {
-      var columnsCount = this.wot.wtViewport.columnsRenderCalculator.count;
-      var totalColumns = this.wot.getSetting('totalColumns');
+      var wot = this.wot;
+      var totalColumns = wot.getSetting('totalColumns');
+      var columnsCount = wot.wtViewport.columnsRenderCalculator.count;
 
-      if (this.wot.isOverlayName(_base.default.CLONE_DEBUG)) {
+      if (wot.isOverlayName(_base.default.CLONE_DEBUG)) {
         columnsCount = totalColumns;
-      } else if (this.wot.isOverlayName(_base.default.CLONE_LEFT) || this.wot.isOverlayName(_base.default.CLONE_TOP_LEFT_CORNER) || this.wot.isOverlayName(_base.default.CLONE_BOTTOM_LEFT_CORNER)) {
-        return Math.min(this.wot.getSetting('fixedColumnsLeft'), totalColumns);
+      } else if (wot.isOverlayName(_base.default.CLONE_LEFT) || wot.isOverlayName(_base.default.CLONE_TOP_LEFT_CORNER) || wot.isOverlayName(_base.default.CLONE_BOTTOM_LEFT_CORNER)) {
+        return Math.min(wot.getSetting('fixedColumnsLeft'), totalColumns);
       }
 
       return columnsCount;
@@ -26558,15 +26603,16 @@ function () {
   }, {
     key: "getRenderedRowsCount",
     value: function getRenderedRowsCount() {
-      var rowsCount = this.wot.wtViewport.rowsRenderCalculator.count;
-      var totalRows = this.wot.getSetting('totalRows');
+      var wot = this.wot;
+      var totalRows = wot.getSetting('totalRows');
+      var rowsCount = wot.wtViewport.rowsRenderCalculator.count;
 
-      if (this.wot.isOverlayName(_base.default.CLONE_DEBUG)) {
+      if (wot.isOverlayName(_base.default.CLONE_DEBUG)) {
         rowsCount = totalRows;
-      } else if (this.wot.isOverlayName(_base.default.CLONE_TOP) || this.wot.isOverlayName(_base.default.CLONE_TOP_LEFT_CORNER)) {
-        rowsCount = Math.min(this.wot.getSetting('fixedRowsTop'), totalRows);
-      } else if (this.wot.isOverlayName(_base.default.CLONE_BOTTOM) || this.wot.isOverlayName(_base.default.CLONE_BOTTOM_LEFT_CORNER)) {
-        rowsCount = Math.min(this.wot.getSetting('fixedRowsBottom'), totalRows);
+      } else if (wot.isOverlayName(_base.default.CLONE_TOP) || wot.isOverlayName(_base.default.CLONE_TOP_LEFT_CORNER)) {
+        rowsCount = Math.min(wot.getSetting('fixedRowsTop'), totalRows);
+      } else if (wot.isOverlayName(_base.default.CLONE_BOTTOM) || wot.isOverlayName(_base.default.CLONE_BOTTOM_LEFT_CORNER)) {
+        rowsCount = Math.min(wot.getSetting('fixedRowsBottom'), totalRows);
       }
 
       return rowsCount;
@@ -26747,7 +26793,7 @@ var _templateLiteralTag = __webpack_require__(39);
 var _base = _interopRequireDefault(__webpack_require__(50));
 
 function _templateObject() {
-  var data = (0, _taggedTemplateLiteral2.default)(["Performance tip: Handsontable rendered more than 1000 visible rows. Consider limiting the number\n          of rendered rows by specifying the table height and/or turning off the \"renderAllRows\" option."]);
+  var data = (0, _taggedTemplateLiteral2.default)(["Performance tip: Handsontable rendered more than 1000 visible rows. Consider limiting the number \n          of rendered rows by specifying the table height and/or turning off the \"renderAllRows\" option."]);
 
   _templateObject = function _templateObject() {
     return data;
@@ -27534,21 +27580,22 @@ function () {
   }, {
     key: "getWorkspaceWidth",
     value: function getWorkspaceWidth() {
-      var width;
-      var rootDocument = this.wot.rootDocument;
-      var totalColumns = this.wot.getSetting('totalColumns');
+      var wot = this.wot;
+      var rootDocument = wot.rootDocument,
+          rootWindow = wot.rootWindow;
       var trimmingContainer = this.instance.wtOverlays.leftOverlay.trimmingContainer;
-      var overflow;
-      var stretchSetting = this.wot.getSetting('stretchH');
       var docOffsetWidth = rootDocument.documentElement.offsetWidth;
-      var preventOverflow = this.wot.getSetting('preventOverflow');
-      var rootWindow = this.wot.rootWindow;
+      var totalColumns = wot.getSetting('totalColumns');
+      var stretchSetting = wot.getSetting('stretchH');
+      var preventOverflow = wot.getSetting('preventOverflow');
+      var width;
+      var overflow;
 
       if (preventOverflow) {
         return (0, _element.outerWidth)(this.instance.wtTable.wtRootElement);
       }
 
-      if (this.wot.getSetting('freezeOverlays')) {
+      if (wot.getSetting('freezeOverlays')) {
         width = Math.min(docOffsetWidth - this.getWorkspaceOffset().left, docOffsetWidth);
       } else {
         width = Math.min(this.getContainerFillWidth(), docOffsetWidth - this.getWorkspaceOffset().left, docOffsetWidth);
@@ -27563,7 +27610,7 @@ function () {
       }
 
       if (trimmingContainer !== rootWindow) {
-        overflow = (0, _element.getStyle)(rootWindow, this.instance.wtOverlays.leftOverlay.trimmingContainer, 'overflow');
+        overflow = (0, _element.getStyle)(this.instance.wtOverlays.leftOverlay.trimmingContainer, 'overflow', rootWindow);
 
         if (overflow === 'scroll' || overflow === 'hidden' || overflow === 'auto') {
           // this is used in `scroll.html`
@@ -27668,7 +27715,8 @@ function () {
   }, {
     key: "getWorkspaceActualWidth",
     value: function getWorkspaceActualWidth() {
-      return (0, _element.outerWidth)(this.wot.wtTable.TABLE) || (0, _element.outerWidth)(this.wot.wtTable.TBODY) || (0, _element.outerWidth)(this.wot.wtTable.THEAD); // IE8 reports 0 as <table> offsetWidth;
+      var wtTable = this.wot.wtTable;
+      return (0, _element.outerWidth)(wtTable.TABLE) || (0, _element.outerWidth)(wtTable.TBODY) || (0, _element.outerWidth)(wtTable.THEAD); // IE8 reports 0 as <table> offsetWidth;
     }
     /**
      * @returns {Number}
@@ -27781,50 +27829,53 @@ function () {
   }, {
     key: "createRowsCalculator",
     value: function createRowsCalculator() {
-      var _this2 = this;
-
       var visible = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : false;
+      var wot = this.wot;
+      var wtSettings = wot.wtSettings,
+          wtOverlays = wot.wtOverlays,
+          wtTable = wot.wtTable,
+          rootDocument = wot.rootDocument;
       var height;
       var scrollbarHeight;
       var fixedRowsHeight;
       this.rowHeaderWidth = NaN;
 
-      if (this.wot.wtSettings.settings.renderAllRows && !visible) {
+      if (wtSettings.settings.renderAllRows && !visible) {
         height = Infinity;
       } else {
         height = this.getViewportHeight();
       }
 
-      var pos = this.wot.wtOverlays.topOverlay.getScrollPosition() - this.wot.wtOverlays.topOverlay.getTableParentOffset();
+      var pos = wtOverlays.topOverlay.getScrollPosition() - wtOverlays.topOverlay.getTableParentOffset();
 
       if (pos < 0) {
         pos = 0;
       }
 
-      var fixedRowsTop = this.wot.getSetting('fixedRowsTop');
-      var fixedRowsBottom = this.wot.getSetting('fixedRowsBottom');
-      var totalRows = this.wot.getSetting('totalRows');
+      var fixedRowsTop = wot.getSetting('fixedRowsTop');
+      var fixedRowsBottom = wot.getSetting('fixedRowsBottom');
+      var totalRows = wot.getSetting('totalRows');
 
       if (fixedRowsTop) {
-        fixedRowsHeight = this.wot.wtOverlays.topOverlay.sumCellSizes(0, fixedRowsTop);
+        fixedRowsHeight = wtOverlays.topOverlay.sumCellSizes(0, fixedRowsTop);
         pos += fixedRowsHeight;
         height -= fixedRowsHeight;
       }
 
-      if (fixedRowsBottom && this.wot.wtOverlays.bottomOverlay.clone) {
-        fixedRowsHeight = this.wot.wtOverlays.bottomOverlay.sumCellSizes(totalRows - fixedRowsBottom, totalRows);
+      if (fixedRowsBottom && wtOverlays.bottomOverlay.clone) {
+        fixedRowsHeight = wtOverlays.bottomOverlay.sumCellSizes(totalRows - fixedRowsBottom, totalRows);
         height -= fixedRowsHeight;
       }
 
-      if (this.wot.wtTable.holder.clientHeight === this.wot.wtTable.holder.offsetHeight) {
+      if (wtTable.holder.clientHeight === wtTable.holder.offsetHeight) {
         scrollbarHeight = 0;
       } else {
-        scrollbarHeight = (0, _element.getScrollbarWidth)();
+        scrollbarHeight = (0, _element.getScrollbarWidth)(rootDocument);
       }
 
-      return new _viewportRows.default(height, pos, this.wot.getSetting('totalRows'), function (sourceRow) {
-        return _this2.wot.wtTable.getRowHeight(sourceRow);
-      }, visible ? null : this.wot.wtSettings.settings.viewportRowCalculatorOverride, visible, scrollbarHeight);
+      return new _viewportRows.default(height, pos, wot.getSetting('totalRows'), function (sourceRow) {
+        return wtTable.getRowHeight(sourceRow);
+      }, visible ? null : wtSettings.settings.viewportRowCalculatorOverride, visible, scrollbarHeight);
     }
     /**
      * Creates:
@@ -27837,33 +27888,36 @@ function () {
   }, {
     key: "createColumnsCalculator",
     value: function createColumnsCalculator() {
-      var _this3 = this;
-
       var visible = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : false;
+      var wot = this.wot;
+      var wtSettings = wot.wtSettings,
+          wtOverlays = wot.wtOverlays,
+          wtTable = wot.wtTable,
+          rootDocument = wot.rootDocument;
       var width = this.getViewportWidth();
-      var pos = this.wot.wtOverlays.leftOverlay.getScrollPosition() - this.wot.wtOverlays.leftOverlay.getTableParentOffset();
+      var pos = wtOverlays.leftOverlay.getScrollPosition() - wtOverlays.leftOverlay.getTableParentOffset();
       this.columnHeaderHeight = NaN;
 
       if (pos < 0) {
         pos = 0;
       }
 
-      var fixedColumnsLeft = this.wot.getSetting('fixedColumnsLeft');
+      var fixedColumnsLeft = wot.getSetting('fixedColumnsLeft');
 
       if (fixedColumnsLeft) {
-        var fixedColumnsWidth = this.wot.wtOverlays.leftOverlay.sumCellSizes(0, fixedColumnsLeft);
+        var fixedColumnsWidth = wtOverlays.leftOverlay.sumCellSizes(0, fixedColumnsLeft);
         pos += fixedColumnsWidth;
         width -= fixedColumnsWidth;
       }
 
-      if (this.wot.wtTable.holder.clientWidth !== this.wot.wtTable.holder.offsetWidth) {
-        width -= (0, _element.getScrollbarWidth)();
+      if (wtTable.holder.clientWidth !== wtTable.holder.offsetWidth) {
+        width -= (0, _element.getScrollbarWidth)(rootDocument);
       }
 
-      return new _viewportColumns.default(width, pos, this.wot.getSetting('totalColumns'), function (sourceCol) {
-        return _this3.wot.wtTable.getColumnWidth(sourceCol);
-      }, visible ? null : this.wot.wtSettings.settings.viewportColumnCalculatorOverride, visible, this.wot.getSetting('stretchH'), function (stretchedWidth, column) {
-        return _this3.wot.getSetting('onBeforeStretchingColumnWidth', stretchedWidth, column);
+      return new _viewportColumns.default(width, pos, wot.getSetting('totalColumns'), function (sourceCol) {
+        return wot.wtTable.getColumnWidth(sourceCol);
+      }, visible ? null : wtSettings.settings.viewportColumnCalculatorOverride, visible, wot.getSetting('stretchH'), function (stretchedWidth, column) {
+        return wot.getSetting('onBeforeStretchingColumnWidth', stretchedWidth, column);
       });
     }
     /**
@@ -28206,13 +28260,14 @@ function () {
       }
 
       this.disappear();
-      var bordersHolder = this.wot.wtTable.bordersHolder;
+      var wtTable = this.wot.wtTable;
+      var bordersHolder = wtTable.bordersHolder;
 
       if (!bordersHolder) {
         bordersHolder = rootDocument.createElement('div');
         bordersHolder.className = 'htBorders';
-        this.wot.wtTable.bordersHolder = bordersHolder;
-        this.wot.wtTable.spreader.appendChild(bordersHolder);
+        wtTable.bordersHolder = bordersHolder;
+        wtTable.spreader.appendChild(bordersHolder);
       }
 
       bordersHolder.appendChild(this.main);
@@ -28338,14 +28393,18 @@ function () {
         return;
       }
 
+      var _this$wot = this.wot,
+          wtTable = _this$wot.wtTable,
+          rootDocument = _this$wot.rootDocument,
+          rootWindow = _this$wot.rootWindow;
       var fromRow;
       var toRow;
       var fromColumn;
       var toColumn;
-      var rowsCount = this.wot.wtTable.getRenderedRowsCount();
+      var rowsCount = wtTable.getRenderedRowsCount();
 
       for (var i = 0; i < rowsCount; i += 1) {
-        var s = this.wot.wtTable.rowFilter.renderedToSource(i);
+        var s = wtTable.rowFilter.renderedToSource(i);
 
         if (s >= corners[0] && s <= corners[2]) {
           fromRow = s;
@@ -28354,7 +28413,7 @@ function () {
       }
 
       for (var _i = rowsCount - 1; _i >= 0; _i -= 1) {
-        var _s = this.wot.wtTable.rowFilter.renderedToSource(_i);
+        var _s = wtTable.rowFilter.renderedToSource(_i);
 
         if (_s >= corners[0] && _s <= corners[2]) {
           toRow = _s;
@@ -28362,10 +28421,10 @@ function () {
         }
       }
 
-      var columnsCount = this.wot.wtTable.getRenderedColumnsCount();
+      var columnsCount = wtTable.getRenderedColumnsCount();
 
       for (var _i2 = 0; _i2 < columnsCount; _i2 += 1) {
-        var _s2 = this.wot.wtTable.columnFilter.renderedToSource(_i2);
+        var _s2 = wtTable.columnFilter.renderedToSource(_i2);
 
         if (_s2 >= corners[1] && _s2 <= corners[3]) {
           fromColumn = _s2;
@@ -28374,7 +28433,7 @@ function () {
       }
 
       for (var _i3 = columnsCount - 1; _i3 >= 0; _i3 -= 1) {
-        var _s3 = this.wot.wtTable.columnFilter.renderedToSource(_i3);
+        var _s3 = wtTable.columnFilter.renderedToSource(_i3);
 
         if (_s3 >= corners[1] && _s3 <= corners[3]) {
           toColumn = _s3;
@@ -28387,12 +28446,12 @@ function () {
         return;
       }
 
-      var fromTD = this.wot.wtTable.getCell(new _coords.default(fromRow, fromColumn));
+      var fromTD = wtTable.getCell(new _coords.default(fromRow, fromColumn));
       var isMultiple = fromRow !== toRow || fromColumn !== toColumn;
-      var toTD = isMultiple ? this.wot.wtTable.getCell(new _coords.default(toRow, toColumn)) : fromTD;
+      var toTD = isMultiple ? wtTable.getCell(new _coords.default(toRow, toColumn)) : fromTD;
       var fromOffset = (0, _element.offset)(fromTD);
       var toOffset = isMultiple ? (0, _element.offset)(toTD) : fromOffset;
-      var containerOffset = (0, _element.offset)(this.wot.wtTable.TABLE);
+      var containerOffset = (0, _element.offset)(wtTable.TABLE);
       var minTop = fromOffset.top;
       var minLeft = fromOffset.left;
       var left = minLeft - containerOffset.left - 1;
@@ -28436,7 +28495,7 @@ function () {
         }
       }
 
-      var style = (0, _element.getComputedStyle)(fromTD);
+      var style = (0, _element.getComputedStyle)(fromTD, rootWindow);
 
       if (parseInt(style.borderTopWidth, 10) > 0) {
         top += 1;
@@ -28487,11 +28546,11 @@ function () {
         this.cornerStyle.width = this.cornerDefaultStyle.width; // Hide the fill handle, so the possible further adjustments won't force unneeded scrollbars.
 
         this.cornerStyle.display = 'none';
-        var trimmingContainer = (0, _element.getTrimmingContainer)(this.wot.wtTable.TABLE);
-        var trimToWindow = trimmingContainer === this.wot.rootWindow;
+        var trimmingContainer = (0, _element.getTrimmingContainer)(wtTable.TABLE);
+        var trimToWindow = trimmingContainer === rootWindow;
 
         if (trimToWindow) {
-          trimmingContainer = this.wot.wtTable.wtRootElement.ownerDocument.documentElement;
+          trimmingContainer = rootDocument.documentElement;
         }
 
         if (toColumn === this.wot.getSetting('totalColumns') - 1) {
@@ -28564,9 +28623,8 @@ function () {
   }, {
     key: "getDimensionsFromHeader",
     value: function getDimensionsFromHeader(direction, fromIndex, toIndex, containerOffset) {
-      var _this4 = this;
-
-      var rootHotElement = this.wot.wtTable.wtRootElement.parentNode;
+      var wtTable = this.wot.wtTable;
+      var rootHotElement = wtTable.wtRootElement.parentNode;
       var getHeaderFn = null;
       var dimensionFn = null;
       var entireSelectionClassname = null;
@@ -28579,9 +28637,7 @@ function () {
       switch (direction) {
         case 'rows':
           getHeaderFn = function getHeaderFn() {
-            var _this4$wot$wtTable;
-
-            return (_this4$wot$wtTable = _this4.wot.wtTable).getRowHeader.apply(_this4$wot$wtTable, arguments);
+            return wtTable.getRowHeader.apply(wtTable, arguments);
           };
 
           dimensionFn = function dimensionFn() {
@@ -28594,9 +28650,7 @@ function () {
 
         case 'columns':
           getHeaderFn = function getHeaderFn() {
-            var _this4$wot$wtTable2;
-
-            return (_this4$wot$wtTable2 = _this4.wot.wtTable).getColumnHeader.apply(_this4$wot$wtTable2, arguments);
+            return wtTable.getColumnHeader.apply(wtTable, arguments);
           };
 
           dimensionFn = function dimensionFn() {
@@ -36592,8 +36646,6 @@ function (_BaseUI) {
   (0, _createClass2.default)(HeadersUI, [{
     key: "appendLevelIndicators",
     value: function appendLevelIndicators(row, TH) {
-      var _this2 = this;
-
       var rowIndex = this.trimRowsPlugin.rowsMapper.getValueByIndex(row);
       var rowLevel = this.dataManager.getRowLevel(rowIndex);
       var rowObject = this.dataManager.getDataObject(rowIndex);
@@ -36608,11 +36660,11 @@ function (_BaseUI) {
       (0, _element.addClass)(TH, HeadersUI.CSS_CLASSES.indicatorContainer);
 
       if (rowLevel) {
+        var rootDocument = this.hot.rootDocument;
         var initialContent = innerSpan.cloneNode(true);
         innerDiv.innerHTML = '';
         (0, _number.rangeEach)(0, rowLevel - 1, function () {
-          var levelIndicator = _this2.hot.rootDocument.createElement('SPAN');
-
+          var levelIndicator = rootDocument.createElement('SPAN');
           (0, _element.addClass)(levelIndicator, HeadersUI.CSS_CLASSES.emptyIndicator);
           innerDiv.appendChild(levelIndicator);
         });
@@ -36860,7 +36912,7 @@ Handsontable._getListenersCounter = _eventManager.getListenersCounter; // For Me
 
 var hotPackageType = "pro";
 Handsontable.packageName = "handsontable-".concat(hotPackageType);
-Handsontable.buildDate = "15/01/2019 17:56:06";
+Handsontable.buildDate = "17/01/2019 17:30:26";
 Handsontable.version = "6.2.1"; // Export Hooks singleton
 
 Handsontable.hooks = _pluginHooks.default.getSingleton(); // TODO: Remove this exports after rewrite tests about this module
@@ -37527,7 +37579,9 @@ function (_Overlay) {
   }, {
     key: "resetFixedPosition",
     value: function resetFixedPosition() {
-      if (!this.needFullRender || !this.wot.wtTable.holder.parentNode) {
+      var wtTable = this.wot.wtTable;
+
+      if (!this.needFullRender || !wtTable.holder.parentNode) {
         // removed from DOM
         return;
       }
@@ -37537,12 +37591,12 @@ function (_Overlay) {
       var preventOverflow = this.wot.getSetting('preventOverflow');
 
       if (this.trimmingContainer === this.wot.rootWindow && (!preventOverflow || preventOverflow !== 'horizontal')) {
-        var box = this.wot.wtTable.hider.getBoundingClientRect();
+        var box = wtTable.hider.getBoundingClientRect();
         var left = Math.ceil(box.left);
         var right = Math.ceil(box.right);
         var finalLeft;
         var finalTop;
-        finalTop = this.wot.wtTable.hider.style.top;
+        finalTop = wtTable.hider.style.top;
         finalTop = finalTop === '' ? 0 : finalTop;
 
         if (left < 0 && right - overlayRoot.offsetWidth > 0) {
@@ -37645,10 +37699,11 @@ function (_Overlay) {
     key: "adjustRootElementSize",
     value: function adjustRootElementSize() {
       var _this$wot = this.wot,
-          rootWindow = _this$wot.rootWindow,
-          wtTable = _this$wot.wtTable;
+          wtTable = _this$wot.wtTable,
+          rootDocument = _this$wot.rootDocument,
+          rootWindow = _this$wot.rootWindow;
       var masterHolder = wtTable.holder;
-      var scrollbarHeight = masterHolder.clientHeight === masterHolder.offsetHeight ? 0 : (0, _element.getScrollbarWidth)();
+      var scrollbarHeight = masterHolder.clientHeight === masterHolder.offsetHeight ? 0 : (0, _element.getScrollbarWidth)(rootDocument);
       var overlayRoot = this.clone.wtTable.holder.parentNode;
       var overlayRootStyle = overlayRoot.style;
       var preventOverflow = this.wot.getSetting('preventOverflow');
@@ -37672,7 +37727,7 @@ function (_Overlay) {
   }, {
     key: "adjustRootChildrenSize",
     value: function adjustRootChildrenSize() {
-      var scrollbarWidth = (0, _element.getScrollbarWidth)();
+      var scrollbarWidth = (0, _element.getScrollbarWidth)(this.wot.rootDocument);
       this.clone.wtTable.hider.style.height = this.hider.style.height;
       this.clone.wtTable.holder.style.height = this.clone.wtTable.holder.parentNode.style.height;
 
@@ -37739,7 +37794,7 @@ function (_Overlay) {
       var scrollbarCompensation = 0;
 
       if (beyondRendered && mainHolder.offsetWidth !== mainHolder.clientWidth) {
-        scrollbarCompensation = (0, _element.getScrollbarWidth)();
+        scrollbarCompensation = (0, _element.getScrollbarWidth)(this.wot.rootDocument);
       }
 
       if (beyondRendered) {
@@ -38011,7 +38066,7 @@ function (_Overlay) {
     key: "adjustRootElementSize",
     value: function adjustRootElementSize() {
       var masterHolder = this.wot.wtTable.holder;
-      var scrollbarWidth = masterHolder.clientWidth === masterHolder.offsetWidth ? 0 : (0, _element.getScrollbarWidth)();
+      var scrollbarWidth = masterHolder.clientWidth === masterHolder.offsetWidth ? 0 : (0, _element.getScrollbarWidth)(this.wtRootElement.rootDocument);
       var overlayRoot = this.clone.wtTable.holder.parentNode;
       var overlayRootStyle = overlayRoot.style;
       var preventOverflow = this.wot.getSetting('preventOverflow');
@@ -38035,7 +38090,7 @@ function (_Overlay) {
   }, {
     key: "adjustRootChildrenSize",
     value: function adjustRootChildrenSize() {
-      var scrollbarWidth = (0, _element.getScrollbarWidth)();
+      var scrollbarWidth = (0, _element.getScrollbarWidth)(this.wot.rootDocument);
       this.clone.wtTable.hider.style.width = this.hider.style.width;
       this.clone.wtTable.holder.style.width = this.clone.wtTable.holder.parentNode.style.width;
 
@@ -38097,24 +38152,25 @@ function (_Overlay) {
   }, {
     key: "scrollTo",
     value: function scrollTo(sourceRow, bottomEdge) {
-      var newY = this.getTableParentOffset();
-      var sourceInstance = this.wot.cloneSource ? this.wot.cloneSource : this.wot;
+      var wot = this.wot;
+      var sourceInstance = wot.cloneSource ? wot.cloneSource : wot;
       var mainHolder = sourceInstance.wtTable.holder;
+      var newY = this.getTableParentOffset();
       var scrollbarCompensation = 0;
 
       if (bottomEdge && mainHolder.offsetHeight !== mainHolder.clientHeight) {
-        scrollbarCompensation = (0, _element.getScrollbarWidth)();
+        scrollbarCompensation = (0, _element.getScrollbarWidth)(wot.rootDocument);
       }
 
       if (bottomEdge) {
-        var fixedRowsBottom = this.wot.getSetting('fixedRowsBottom');
-        var totalRows = this.wot.getSetting('totalRows');
+        var fixedRowsBottom = wot.getSetting('fixedRowsBottom');
+        var totalRows = wot.getSetting('totalRows');
         newY += this.sumCellSizes(0, sourceRow + 1);
-        newY -= this.wot.wtViewport.getViewportHeight() - this.sumCellSizes(totalRows - fixedRowsBottom, totalRows); // Fix 1 pixel offset when cell is selected
+        newY -= wot.wtViewport.getViewportHeight() - this.sumCellSizes(totalRows - fixedRowsBottom, totalRows); // Fix 1 pixel offset when cell is selected
 
         newY += 1;
       } else {
-        newY += this.sumCellSizes(this.wot.getSetting('fixedRowsTop'), sourceRow);
+        newY += this.sumCellSizes(wot.getSetting('fixedRowsTop'), sourceRow);
       }
 
       newY += scrollbarCompensation;
@@ -38289,7 +38345,8 @@ function (_Overlay) {
   (0, _createClass2.default)(TopLeftCornerOverlay, [{
     key: "shouldBeRendered",
     value: function shouldBeRendered() {
-      return !!((this.wot.getSetting('fixedRowsTop') || this.wot.getSetting('columnHeaders').length) && (this.wot.getSetting('fixedColumnsLeft') || this.wot.getSetting('rowHeaders').length));
+      var wot = this.wot;
+      return !!((wot.getSetting('fixedRowsTop') || wot.getSetting('columnHeaders').length) && (wot.getSetting('fixedColumnsLeft') || wot.getSetting('rowHeaders').length));
     }
     /**
      * Updates the corner overlay position
@@ -38401,10 +38458,13 @@ function (_Overlay) {
   (0, _createClass2.default)(BottomOverlay, [{
     key: "repositionOverlay",
     value: function repositionOverlay() {
-      var scrollbarWidth = (0, _element.getScrollbarWidth)();
+      var _this$wot = this.wot,
+          wtTable = _this$wot.wtTable,
+          rootDocument = _this$wot.rootDocument;
       var cloneRoot = this.clone.wtTable.holder.parentNode;
+      var scrollbarWidth = (0, _element.getScrollbarWidth)(rootDocument);
 
-      if (this.wot.wtTable.holder.clientHeight === this.wot.wtTable.holder.offsetHeight) {
+      if (wtTable.holder.clientHeight === wtTable.holder.offsetHeight) {
         scrollbarWidth = 0;
       }
 
@@ -38440,9 +38500,9 @@ function (_Overlay) {
       overlayRoot.style.top = '';
 
       if (this.wot.wtOverlays.leftOverlay.trimmingContainer === this.wot.rootWindow) {
-        var _this$wot = this.wot,
-            rootDocument = _this$wot.rootDocument,
-            wtTable = _this$wot.wtTable;
+        var _this$wot2 = this.wot,
+            rootDocument = _this$wot2.rootDocument,
+            wtTable = _this$wot2.wtTable;
         var box = wtTable.hider.getBoundingClientRect();
         var bottom = Math.ceil(box.bottom);
         var finalLeft;
@@ -38482,7 +38542,7 @@ function (_Overlay) {
       var rootWindow = this.wot.rootWindow;
 
       if (this.mainTableScrollableElement === rootWindow) {
-        rootWindow.scrollTo((0, _element.getWindowScrollLeft)(), pos);
+        rootWindow.scrollTo((0, _element.getWindowScrollLeft)(rootWindow), pos);
       } else {
         this.mainTableScrollableElement.scrollTop = pos;
       }
@@ -38507,12 +38567,15 @@ function (_Overlay) {
   }, {
     key: "sumCellSizes",
     value: function sumCellSizes(from, to) {
+      var _this$wot3 = this.wot,
+          wtTable = _this$wot3.wtTable,
+          wtSettings = _this$wot3.wtSettings;
+      var defaultRowHeight = wtSettings.settings.defaultRowHeight;
       var row = from;
       var sum = 0;
-      var defaultRowHeight = this.wot.wtSettings.settings.defaultRowHeight;
 
       while (row < to) {
-        var height = this.wot.wtTable.getRowHeight(row);
+        var height = wtTable.getRowHeight(row);
         sum += height === void 0 ? defaultRowHeight : height;
         row += 1;
       }
@@ -38547,15 +38610,19 @@ function (_Overlay) {
   }, {
     key: "adjustRootElementSize",
     value: function adjustRootElementSize() {
-      var masterHolder = this.wot.wtTable.holder;
-      var scrollbarWidth = masterHolder.clientWidth === masterHolder.offsetWidth ? 0 : (0, _element.getScrollbarWidth)();
+      var _this$wot4 = this.wot,
+          wtTable = _this$wot4.wtTable,
+          wtViewport = _this$wot4.wtViewport,
+          rootWindow = _this$wot4.rootWindow;
+      var masterHolder = wtTable.holder;
+      var scrollbarWidth = masterHolder.clientWidth === masterHolder.offsetWidth ? 0 : (0, _element.getScrollbarWidth)(this.wot.rootDocument);
       var overlayRoot = this.clone.wtTable.holder.parentNode;
       var overlayRootStyle = overlayRoot.style;
 
-      if (this.trimmingContainer === this.wot.rootWindow) {
+      if (this.trimmingContainer === rootWindow) {
         overlayRootStyle.width = '';
       } else {
-        overlayRootStyle.width = "".concat(this.wot.wtViewport.getWorkspaceWidth() - scrollbarWidth, "px");
+        overlayRootStyle.width = "".concat(wtViewport.getWorkspaceWidth() - scrollbarWidth, "px");
       }
 
       this.clone.wtTable.holder.style.width = overlayRootStyle.width;
@@ -38569,7 +38636,7 @@ function (_Overlay) {
   }, {
     key: "adjustRootChildrenSize",
     value: function adjustRootChildrenSize() {
-      var scrollbarWidth = (0, _element.getScrollbarWidth)();
+      var scrollbarWidth = (0, _element.getScrollbarWidth)(this.wot.rootDocument);
       this.clone.wtTable.hider.style.width = this.hider.style.width;
       this.clone.wtTable.holder.style.width = this.clone.wtTable.holder.parentNode.style.width;
 
@@ -38636,7 +38703,7 @@ function (_Overlay) {
       var scrollbarCompensation = 0;
 
       if (bottomEdge && mainHolder.offsetHeight !== mainHolder.clientHeight) {
-        scrollbarCompensation = (0, _element.getScrollbarWidth)();
+        scrollbarCompensation = (0, _element.getScrollbarWidth)(this.wot.rootDocument);
       }
 
       if (bottomEdge) {
@@ -38675,7 +38742,7 @@ function (_Overlay) {
   }, {
     key: "getScrollPosition",
     value: function getScrollPosition() {
-      return (0, _element.getScrollTop)(this.mainTableScrollableElement);
+      return (0, _element.getScrollTop)(this.mainTableScrollableElement, this.wot.rootWindow);
     }
     /**
      * Adds css classes to hide the header border's header (cell-selection border hiding issue)
@@ -38774,8 +38841,10 @@ function (_Overlay) {
   (0, _createClass2.default)(BottomLeftCornerOverlay, [{
     key: "shouldBeRendered",
     value: function shouldBeRendered() {
+      var wot = this.wot;
       /* eslint-disable no-unneeded-ternary */
-      return this.wot.getSetting('fixedRowsBottom') && (this.wot.getSetting('fixedColumnsLeft') || this.wot.getSetting('rowHeaders').length) ? true : false;
+
+      return wot.getSetting('fixedRowsBottom') && (wot.getSetting('fixedColumnsLeft') || wot.getSetting('rowHeaders').length) ? true : false;
     }
     /**
      * Reposition the overlay.
@@ -38784,10 +38853,13 @@ function (_Overlay) {
   }, {
     key: "repositionOverlay",
     value: function repositionOverlay() {
-      var scrollbarWidth = (0, _element.getScrollbarWidth)();
+      var _this$wot = this.wot,
+          wtTable = _this$wot.wtTable,
+          rootDocument = _this$wot.rootDocument;
       var cloneRoot = this.clone.wtTable.holder.parentNode;
+      var scrollbarWidth = (0, _element.getScrollbarWidth)(rootDocument);
 
-      if (this.wot.wtTable.holder.clientHeight === this.wot.wtTable.holder.offsetHeight) {
+      if (wtTable.holder.clientHeight === wtTable.holder.offsetHeight) {
         scrollbarWidth = 0;
       }
 
@@ -38801,9 +38873,10 @@ function (_Overlay) {
   }, {
     key: "resetFixedPosition",
     value: function resetFixedPosition() {
+      var wot = this.wot;
       this.updateTrimmingContainer();
 
-      if (!this.wot.wtTable.holder.parentNode) {
+      if (!wot.wtTable.holder.parentNode) {
         // removed from DOM
         return;
       }
@@ -38813,13 +38886,13 @@ function (_Overlay) {
       var tableWidth = (0, _element.outerWidth)(this.clone.wtTable.TABLE);
       overlayRoot.style.top = '';
 
-      if (this.trimmingContainer === this.wot.rootWindow) {
-        var box = this.wot.wtTable.hider.getBoundingClientRect();
+      if (this.trimmingContainer === wot.rootWindow) {
+        var box = wot.wtTable.hider.getBoundingClientRect();
         var bottom = Math.ceil(box.bottom);
         var left = Math.ceil(box.left);
         var finalLeft;
         var finalBottom;
-        var bodyHeight = this.wot.rootDocument.body.offsetHeight;
+        var bodyHeight = wot.rootDocument.body.offsetHeight;
 
         if (left < 0) {
           finalLeft = -left;
@@ -40631,13 +40704,15 @@ var BAD_VALUE_CLASS = 'htBadValue';
  */
 
 function checkboxRenderer(instance, TD, row, col, prop, value, cellProperties) {
+  var rootDocument = instance.rootDocument;
+
   for (var _len = arguments.length, args = new Array(_len > 7 ? _len - 7 : 0), _key = 7; _key < _len; _key++) {
     args[_key - 7] = arguments[_key];
   }
 
   (0, _index.getRenderer)('base').apply(this, [instance, TD, row, col, prop, value, cellProperties].concat(args));
   registerEvents(instance);
-  var input = createInput(instance.rootDocument);
+  var input = createInput(rootDocument);
   var labelOptions = cellProperties.label;
   var badValue = false;
 
@@ -40676,7 +40751,7 @@ function checkboxRenderer(instance, TD, row, col, prop, value, cellProperties) {
       labelText = instance.getDataAtRowProp(row, labelOptions.property);
     }
 
-    var label = createLabel(instance.rootDocument, labelText);
+    var label = createLabel(rootDocument, labelText);
 
     if (labelOptions.position === 'before') {
       label.appendChild(input);
@@ -40690,7 +40765,7 @@ function checkboxRenderer(instance, TD, row, col, prop, value, cellProperties) {
   TD.appendChild(input);
 
   if (badValue) {
-    TD.appendChild(instance.rootDocument.createTextNode('#bad-value#'));
+    TD.appendChild(rootDocument.createTextNode('#bad-value#'));
   }
 
   if (!isListeningKeyDownEvent.has(instance)) {
@@ -40848,14 +40923,15 @@ function registerEvents(instance) {
   var eventManager = isCheckboxListenerAdded.get(instance);
 
   if (!eventManager) {
+    var rootElement = instance.rootElement;
     eventManager = new _eventManager.default(instance);
-    eventManager.addEventListener(instance.rootElement, 'click', function (event) {
+    eventManager.addEventListener(rootElement, 'click', function (event) {
       return onClick(event, instance);
     });
-    eventManager.addEventListener(instance.rootElement, 'mouseup', function (event) {
+    eventManager.addEventListener(rootElement, 'mouseup', function (event) {
       return onMouseUp(event, instance);
     });
-    eventManager.addEventListener(instance.rootElement, 'change', function (event) {
+    eventManager.addEventListener(rootElement, 'change', function (event) {
       return onChange(event, instance);
     });
     isCheckboxListenerAdded.set(instance, eventManager);
@@ -40866,6 +40942,7 @@ function registerEvents(instance) {
 /**
  * Create input element.
  *
+ * @param {Document} rootDocument
  * @returns {Node}
  */
 
@@ -40881,6 +40958,8 @@ function createInput(rootDocument) {
 /**
  * Create label element.
  *
+ * @param {Document} rootDocument
+ * @param {String} text
  * @returns {Node}
  */
 
@@ -42999,13 +43078,13 @@ function () {
     this.instance.addHook('afterDocumentKeyDown', function (event) {
       return _this.onAfterDocumentKeyDown(event);
     });
-    this.eventManager.addEventListener(this.instance.rootElement.ownerDocument.documentElement, 'keydown', function (event) {
+    this.eventManager.addEventListener(this.instance.rootDocument.documentElement, 'keydown', function (event) {
       if (!_this.destroyed) {
         _this.instance.runHooks('afterDocumentKeyDown', event);
       }
     }); // Open editor when text composition is started (IME editor)
 
-    this.eventManager.addEventListener(this.instance.rootElement.ownerDocument.documentElement, 'compositionstart', function (event) {
+    this.eventManager.addEventListener(this.instance.rootDocument.documentElement, 'compositionstart', function (event) {
       if (!_this.destroyed && _this.activeEditor && !_this.activeEditor.isOpened() && _this.instance.isListening()) {
         _this.openEditor('', event);
       }
@@ -43800,11 +43879,10 @@ function () {
         priv.selectionMouseDown = true;
 
         if (!_this.isTextSelectionAllowed(event.target)) {
-          (0, _element.clearTextSelection)(_this.instance.rootWindow);
+          var rootWindow = _this.instance.rootWindow;
+          (0, _element.clearTextSelection)(rootWindow);
           event.preventDefault();
-
-          _this.instance.rootWindow.focus(); // make sure that window that contains HOT is active. Important when HOT is in iframe.
-
+          rootWindow.focus(); // make sure that window that contains HOT is active. Important when HOT is in iframe.
         }
       });
       this.eventManager.addEventListener(rootElement, 'mouseup', function () {
@@ -43862,10 +43940,12 @@ function () {
         } // immediate click on "holder" means click on the right side of vertical scrollbar
 
 
-        if (next === _this.instance.view.wt.wtTable.holder) {
-          var scrollbarWidth = (0, _element.getScrollbarWidth)();
+        var holder = _this.instance.view.wt.wtTable.holder;
 
-          if (rootDocument.elementFromPoint(eventX + scrollbarWidth, eventY) !== _this.instance.view.wt.wtTable.holder || rootDocument.elementFromPoint(eventX, eventY + scrollbarWidth) !== _this.instance.view.wt.wtTable.holder) {
+        if (next === holder) {
+          var scrollbarWidth = (0, _element.getScrollbarWidth)(rootDocument);
+
+          if (rootDocument.elementFromPoint(eventX + scrollbarWidth, eventY) !== holder || rootDocument.elementFromPoint(eventX, eventY + scrollbarWidth) !== holder) {
             return;
           }
         } else {
@@ -44384,9 +44464,9 @@ function () {
           this.appendColHeader(col, TH);
         }
       } else {
-        var d = this.instance.rootElement.ownerDocument;
-        var div = d.createElement('div');
-        var span = d.createElement('span');
+        var rootDocument = this.instance.rootDocument;
+        var div = rootDocument.createElement('div');
+        var span = rootDocument.createElement('span');
         div.className = 'relative';
         span.className = 'colHeader';
         this.updateCellHeader(span, col, this.instance.getColHeader);
@@ -47869,7 +47949,7 @@ function (_BasePlugin) {
   }, {
     key: "getIfMouseWasDraggedOutside",
     value: function getIfMouseWasDraggedOutside(event) {
-      var documentElement = this.hot.rootElement.ownerDocument.documentElement;
+      var documentElement = this.hot.rootDocument.documentElement;
       var tableBottom = (0, _element.offset)(this.hot.table).top - (this.hot.rootWindow.pageYOffset || documentElement.scrollTop) + (0, _element.outerHeight)(this.hot.table);
       var tableRight = (0, _element.offset)(this.hot.table).left - (this.hot.rootWindow.pageXOffset || documentElement.scrollLeft) + (0, _element.outerWidth)(this.hot.table);
       return event.clientY > tableBottom && event.clientX <= tableRight;
@@ -47885,7 +47965,7 @@ function (_BasePlugin) {
     value: function registerEvents() {
       var _this4 = this;
 
-      var documentElement = this.hot.rootElement.ownerDocument.documentElement;
+      var documentElement = this.hot.rootDocument.documentElement;
       this.eventManager.addEventListener(documentElement, 'mouseup', function () {
         return _this4.onMouseUp();
       });
@@ -50303,13 +50383,14 @@ function (_BasePlugin) {
     value: function registerListeners() {
       var _this3 = this;
 
-      this.eventManager.addEventListener(this.hot.rootDocument, 'mouseover', function (event) {
+      var rootDocument = this.hot.rootDocument;
+      this.eventManager.addEventListener(rootDocument, 'mouseover', function (event) {
         return _this3.onMouseOver(event);
       });
-      this.eventManager.addEventListener(this.hot.rootDocument, 'mousedown', function (event) {
+      this.eventManager.addEventListener(rootDocument, 'mousedown', function (event) {
         return _this3.onMouseDown(event);
       });
-      this.eventManager.addEventListener(this.hot.rootDocument, 'mouseup', function () {
+      this.eventManager.addEventListener(rootDocument, 'mouseup', function () {
         return _this3.onMouseUp();
       });
       this.eventManager.addEventListener(this.editor.getInputElement(), 'blur', function () {
@@ -50543,21 +50624,26 @@ function (_BasePlugin) {
         return;
       }
 
-      var scrollableElement = (0, _element.getScrollableElement)(this.hot.view.wt.wtTable.TABLE);
-      var TD = this.hot.view.wt.wtTable.getCell(this.range.from);
+      var rootWindow = this.hot.rootWindow;
+      var _this$hot$view$wt = this.hot.view.wt,
+          wtTable = _this$hot$view$wt.wtTable,
+          wtOverlays = _this$hot$view$wt.wtOverlays,
+          wtViewport = _this$hot$view$wt.wtViewport;
+      var scrollableElement = (0, _element.getScrollableElement)(wtTable.TABLE);
+      var TD = wtTable.getCell(this.range.from);
       var row = this.range.from.row;
       var column = this.range.from.col;
       var cellOffset = (0, _element.offset)(TD);
-      var lastColWidth = this.hot.view.wt.wtTable.getStretchedColumnWidth(column);
+      var lastColWidth = wtTable.getStretchedColumnWidth(column);
       var cellTopOffset = cellOffset.top < 0 ? 0 : cellOffset.top;
       var cellLeftOffset = cellOffset.left;
 
-      if (this.hot.view.wt.wtViewport.hasVerticalScroll() && scrollableElement !== this.hot.rootWindow) {
-        cellTopOffset -= this.hot.view.wt.wtOverlays.topOverlay.getScrollPosition();
+      if (wtViewport.hasVerticalScroll() && scrollableElement !== rootWindow) {
+        cellTopOffset -= wtOverlays.topOverlay.getScrollPosition();
       }
 
-      if (this.hot.view.wt.wtViewport.hasHorizontalScroll() && scrollableElement !== this.hot.rootWindow) {
-        cellLeftOffset -= this.hot.view.wt.wtOverlays.leftOverlay.getScrollPosition();
+      if (wtViewport.hasHorizontalScroll() && scrollableElement !== rootWindow) {
+        cellLeftOffset -= wtOverlays.leftOverlay.getScrollPosition();
       }
 
       var x = cellLeftOffset + lastColWidth;
@@ -50684,7 +50770,8 @@ function (_BasePlugin) {
     key: "onMouseOver",
     value: function onMouseOver(event) {
       var priv = privatePool.get(this);
-      priv.cellBelowCursor = this.hot.rootDocument.elementFromPoint(event.clientX, event.clientY);
+      var rootDocument = this.hot.rootDocument;
+      priv.cellBelowCursor = rootDocument.elementFromPoint(event.clientX, event.clientY);
 
       if (this.mouseDown || this.editor.isFocused() || (0, _element.hasClass)(event.target, 'wtBorder') || priv.cellBelowCursor !== event.target || !this.editor) {
         return;
@@ -50696,7 +50783,7 @@ function (_BasePlugin) {
           from: new _src.CellCoords(coordinates.row, coordinates.col)
         };
         this.displaySwitch.show(range);
-      } else if ((0, _element.isChildOf)(event.target, this.hot.rootDocument) && !this.targetIsCommentTextArea(event)) {
+      } else if ((0, _element.isChildOf)(event.target, rootDocument) && !this.targetIsCommentTextArea(event)) {
         this.displaySwitch.hide();
       }
     }
@@ -56293,10 +56380,11 @@ function (_BasePlugin) {
     value: function registerEvents() {
       var _this4 = this;
 
-      this.eventManager.addEventListener(this.hot.rootDocument.documentElement, 'mousemove', function (event) {
+      var documentElement = this.hot.rootDocument.documentElement;
+      this.eventManager.addEventListener(documentElement, 'mousemove', function (event) {
         return _this4.onMouseMove(event);
       });
-      this.eventManager.addEventListener(this.hot.rootDocument.documentElement, 'mouseup', function () {
+      this.eventManager.addEventListener(documentElement, 'mouseup', function () {
         return _this4.onMouseUp();
       });
     }
@@ -57394,16 +57482,19 @@ function (_BasePlugin) {
     value: function bindEvents() {
       var _this8 = this;
 
-      this.eventManager.addEventListener(this.hot.rootElement, 'mouseover', function (e) {
+      var _this$hot = this.hot,
+          rootWindow = _this$hot.rootWindow,
+          rootElement = _this$hot.rootElement;
+      this.eventManager.addEventListener(rootElement, 'mouseover', function (e) {
         return _this8.onMouseOver(e);
       });
-      this.eventManager.addEventListener(this.hot.rootElement, 'mousedown', function (e) {
+      this.eventManager.addEventListener(rootElement, 'mousedown', function (e) {
         return _this8.onMouseDown(e);
       });
-      this.eventManager.addEventListener(this.hot.rootWindow, 'mousemove', function (e) {
+      this.eventManager.addEventListener(rootWindow, 'mousemove', function (e) {
         return _this8.onMouseMove(e);
       });
-      this.eventManager.addEventListener(this.hot.rootWindow, 'mouseup', function () {
+      this.eventManager.addEventListener(rootWindow, 'mouseup', function () {
         return _this8.onMouseUp();
       });
     }
@@ -58057,10 +58148,11 @@ function (_BasePlugin) {
     value: function registerEvents() {
       var _this4 = this;
 
-      this.eventManager.addEventListener(this.hot.rootDocument.documentElement, 'mousemove', function (event) {
+      var documentElement = this.hot.rootDocument.documentElement;
+      this.eventManager.addEventListener(documentElement, 'mousemove', function (event) {
         return _this4.onMouseMove(event);
       });
-      this.eventManager.addEventListener(this.hot.rootDocument.documentElement, 'mouseup', function () {
+      this.eventManager.addEventListener(documentElement, 'mouseup', function () {
         return _this4.onMouseUp();
       });
     }
@@ -58102,7 +58194,9 @@ function (_BasePlugin) {
   }, {
     key: "onBeforeOnCellMouseDown",
     value: function onBeforeOnCellMouseDown(event, coords, TD, blockCalculations) {
-      var wtTable = this.hot.view.wt.wtTable;
+      var _this$hot$view$wt = this.hot.view.wt,
+          wtTable = _this$hot$view$wt.wtTable,
+          wtViewport = _this$hot$view$wt.wtViewport;
       var isHeaderSelection = this.hot.selection.isSelectedByRowHeader();
       var selection = this.hot.getSelectedRangeLast();
       var priv = privatePool.get(this);
@@ -58134,7 +58228,7 @@ function (_BasePlugin) {
         priv.target.coords = coords;
         priv.target.TD = TD;
         priv.rowsToMove = this.prepareRowsToMoving();
-        var leftPos = wtTable.holder.scrollLeft + this.hot.view.wt.wtViewport.getRowHeaderWidth();
+        var leftPos = wtTable.holder.scrollLeft + wtViewport.getRowHeaderWidth();
         this.backlight.setPosition(null, leftPos);
         this.backlight.setSize(wtTable.hider.offsetWidth - leftPos, this.getRowsHeight(start, end + 1));
         this.backlight.setOffset((this.getRowsHeight(start, coords.row) + event.layerY) * -1, null);
@@ -58676,6 +58770,7 @@ function (_BasePlugin) {
 
     (0, _classCallCheck2.default)(this, ManualRowResize);
     _this = (0, _possibleConstructorReturn2.default)(this, (0, _getPrototypeOf2.default)(ManualRowResize).call(this, hotInstance));
+    var rootDocument = _this.hot.rootDocument;
     _this.currentTH = null;
     _this.currentRow = null;
     _this.selectedRows = [];
@@ -58684,8 +58779,8 @@ function (_BasePlugin) {
     _this.startY = null;
     _this.startHeight = null;
     _this.startOffset = null;
-    _this.handle = _this.hot.rootDocument.createElement('DIV');
-    _this.guide = _this.hot.rootDocument.createElement('DIV');
+    _this.handle = rootDocument.createElement('DIV');
+    _this.guide = rootDocument.createElement('DIV');
     _this.eventManager = new _eventManager.default((0, _assertThisInitialized2.default)((0, _assertThisInitialized2.default)(_this)));
     _this.pressed = null;
     _this.dblclick = 0;
@@ -59138,16 +59233,19 @@ function (_BasePlugin) {
     value: function bindEvents() {
       var _this8 = this;
 
-      this.eventManager.addEventListener(this.hot.rootElement, 'mouseover', function (e) {
+      var _this$hot = this.hot,
+          rootElement = _this$hot.rootElement,
+          rootWindow = _this$hot.rootWindow;
+      this.eventManager.addEventListener(rootElement, 'mouseover', function (e) {
         return _this8.onMouseOver(e);
       });
-      this.eventManager.addEventListener(this.hot.rootElement, 'mousedown', function (e) {
+      this.eventManager.addEventListener(rootElement, 'mousedown', function (e) {
         return _this8.onMouseDown(e);
       });
-      this.eventManager.addEventListener(this.hot.rootWindow, 'mousemove', function (e) {
+      this.eventManager.addEventListener(rootWindow, 'mousemove', function (e) {
         return _this8.onMouseMove(e);
       });
-      this.eventManager.addEventListener(this.hot.rootWindow, 'mouseup', function () {
+      this.eventManager.addEventListener(rootWindow, 'mouseup', function () {
         return _this8.onMouseUp();
       });
     }
@@ -67830,13 +67928,16 @@ function (_BasePlugin) {
     key: "downloadFile",
     value: function downloadFile(format) {
       var options = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
+      var _this$hot = this.hot,
+          rootDocument = _this$hot.rootDocument,
+          rootWindow = _this$hot.rootWindow;
 
       var formatter = this._createTypeFormatter(format, options);
 
       var blob = this._createBlob(formatter);
 
-      var URL = this.hot.rootWindow.URL || this.hot.rootWindow.webkitURL;
-      var a = this.hot.rootDocument.createElement('a');
+      var URL = rootWindow.URL || rootWindow.webkitURL;
+      var a = rootDocument.createElement('a');
       var name = "".concat(formatter.options.filename, ".").concat(formatter.options.fileExtension);
 
       if (a.download !== void 0) {
@@ -67844,9 +67945,9 @@ function (_BasePlugin) {
         a.style.display = 'none';
         a.setAttribute('href', url);
         a.setAttribute('download', name);
-        this.hot.rootDocument.body.appendChild(a);
+        rootDocument.body.appendChild(a);
         a.dispatchEvent(new MouseEvent('click'));
-        this.hot.rootDocument.body.removeChild(a);
+        rootDocument.body.removeChild(a);
         setTimeout(function () {
           URL.revokeObjectURL(url);
         }, 100);
@@ -78290,14 +78391,16 @@ function (_BasePlugin) {
       var _this = this;
 
       return function (index, TH) {
+        var rootDocument = _this.hot.rootDocument;
         TH.removeAttribute('colspan');
         (0, _element.removeClass)(TH, 'hiddenHeader'); // header row is the index of header row counting from the top (=> positive values)
 
         if (_this.colspanArray[headerRow][index] && _this.colspanArray[headerRow][index].colspan) {
           var colspan = _this.colspanArray[headerRow][index].colspan;
           var fixedColumnsLeft = _this.hot.getSettings().fixedColumnsLeft || 0;
-          var topLeftCornerOverlay = _this.hot.view.wt.wtOverlays.topLeftCornerOverlay;
-          var leftOverlay = _this.hot.view.wt.wtOverlays.leftOverlay;
+          var _this$hot$view$wt$wtO = _this.hot.view.wt.wtOverlays,
+              leftOverlay = _this$hot$view$wt$wtO.leftOverlay,
+              topLeftCornerOverlay = _this$hot$view$wt$wtO.topLeftCornerOverlay;
           var isInTopLeftCornerOverlay = topLeftCornerOverlay ? topLeftCornerOverlay.clone.wtTable.THEAD.contains(TH) : false;
           var isInLeftOverlay = leftOverlay ? leftOverlay.clone.wtTable.THEAD.contains(TH) : false;
 
@@ -78315,13 +78418,9 @@ function (_BasePlugin) {
         }
 
         (0, _element.empty)(TH);
-
-        var divEl = _this.hot.rootDocument.createElement('DIV');
-
+        var divEl = rootDocument.createElement('DIV');
         (0, _element.addClass)(divEl, 'relative');
-
-        var spanEl = _this.hot.rootDocument.createElement('SPAN');
-
+        var spanEl = rootDocument.createElement('SPAN');
         (0, _element.addClass)(spanEl, 'colHeader');
         (0, _element.fastInnerHTML)(spanEl, _this.colspanArray[headerRow][index] ? _this.colspanArray[headerRow][index].label || '' : '');
         divEl.appendChild(spanEl);
@@ -78794,9 +78893,9 @@ function () {
   }, {
     key: "buildGhostTable",
     value: function buildGhostTable(container) {
-      var d = this.nestedHeaders.hot.rootDocument;
-      var fragment = d.createDocumentFragment();
-      var table = d.createElement('table');
+      var rootDocument = this.nestedHeaders.hot.rootDocument;
+      var fragment = rootDocument.createDocumentFragment();
+      var table = rootDocument.createElement('table');
       var lastRowColspan = false;
       var isDropdownEnabled = !!this.nestedHeaders.hot.getSettings().dropdownMenu;
       var maxRows = this.nestedHeaders.colspanArray.length;
@@ -78804,11 +78903,11 @@ function () {
       var lastRowIndex = maxRows - 1;
 
       for (var row = 0; row < maxRows; row++) {
-        var tr = d.createElement('tr');
+        var tr = rootDocument.createElement('tr');
         lastRowColspan = false;
 
         for (var col = 0; col < maxCols; col++) {
-          var td = d.createElement('th');
+          var td = rootDocument.createElement('th');
           var headerObj = (0, _object.clone)(this.nestedHeaders.colspanArray[row][col]);
 
           if (headerObj && !headerObj.hidden) {
@@ -78834,10 +78933,10 @@ function () {
 
       if (lastRowColspan) {
         {
-          var _tr = d.createElement('tr');
+          var _tr = rootDocument.createElement('tr');
 
           for (var _col = 0; _col < maxCols; _col++) {
-            var _td = d.createElement('th');
+            var _td = rootDocument.createElement('th');
 
             _tr.appendChild(_td);
           }
