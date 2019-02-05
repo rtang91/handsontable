@@ -100,6 +100,7 @@ function EditorManager(instance, priv, selection) {
         break;
 
       case KEY_CODES.ARROW_UP:
+        console.log('up');
         if (_this.isEditorOpened() && !activeEditor.isWaiting()) {
           _this.closeEditorAndSaveChanges(ctrlDown);
         }
